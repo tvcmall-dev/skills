@@ -144,40 +144,50 @@ class SkillContractTests(unittest.TestCase):
             with self.subTest(tool=tool):
                 self.assertIn(f"`{tool}`", text)
 
-    def test_readme_lists_mainstream_agent_installation_options(self) -> None:
+    def test_readme_lists_skill_installation_options_for_agent_tools(self) -> None:
         text = (ROOT / "README.md").read_text(encoding="utf-8")
         required = (
-            "Agent Tool Installation",
+            "Install This Skill In Agent Tools",
+            "git clone https://github.com/tvcmall-dev/skills.git",
+            ".agents/skills/query-tvcmall-customer-data",
             "Codex CLI",
-            "https://learn.chatgpt.com/docs/codex/cli",
-            "curl -fsSL https://chatgpt.com/codex/install.sh | sh",
-            'powershell -ExecutionPolicy ByPass -c "irm https://chatgpt.com/codex/install.ps1 | iex"',
-            "npm install -g @openai/codex",
+            "$HOME/.agents/skills/query-tvcmall-customer-data",
+            "$query-tvcmall-customer-data",
             "Claude Code / Claude Code CLI",
-            "https://code.claude.com/docs/en/setup",
-            "curl -fsSL https://claude.ai/install.sh | bash",
-            "irm https://claude.ai/install.ps1 | iex",
-            "winget install Anthropic.ClaudeCode",
-            "npm install -g @anthropic-ai/claude-code",
+            "$HOME/.claude/skills/query-tvcmall-customer-data",
+            "/query-tvcmall-customer-data",
             "Gemini CLI",
-            "https://geminicli.com/docs/get-started/installation/",
-            "npm install -g @google/gemini-cli",
+            "$HOME/.gemini/skills/query-tvcmall-customer-data",
+            "gemini skills list",
             "GitHub Copilot CLI",
-            "https://docs.github.com/en/copilot/how-tos/copilot-cli/set-up-copilot-cli/install-copilot-cli",
-            "npm install -g @github/copilot",
-            "winget install GitHub.Copilot",
+            "$HOME/.copilot/skills/query-tvcmall-customer-data",
+            "/skills reload",
             "Cursor CLI",
-            "https://cursor.com/docs/cli/installation",
-            "curl https://cursor.com/install -fsS | bash",
-            "irm 'https://cursor.com/install?win32=true' | iex",
+            ".cursor/skills/query-tvcmall-customer-data",
             "Qwen Code CLI",
-            "https://qwenlm.github.io/qwen-code-docs/en/users/overview/",
-            "curl -fsSL https://qwen-code-assets.oss-cn-hangzhou.aliyuncs.com/installation/install-qwen-standalone.sh | bash",
-            "irm https://qwen-code-assets.oss-cn-hangzhou.aliyuncs.com/installation/install-qwen-standalone.ps1 | iex",
+            ".qwen/skills/query-tvcmall-customer-data",
+            "https://learn.chatgpt.com/docs/build-skills",
+            "https://code.claude.com/docs/en/skills",
+            "https://geminicli.com/docs/cli/skills/",
+            "https://docs.github.com/en/copilot/how-tos/copilot-cli/customize-copilot/add-skills",
+            "https://cursor.com/docs/skills",
+            "https://qwenlm.github.io/qwen-code-docs/en/users/features/skills/",
         )
         for value in required:
             with self.subTest(value=value):
                 self.assertIn(value, text)
+
+        forbidden = (
+            "Agent Tool Installation",
+            "npm install -g @openai/codex",
+            "npm install -g @anthropic-ai/claude-code",
+            "npm install -g @google/gemini-cli",
+            "npm install -g @github/copilot",
+            "winget install GitHub.Copilot",
+        )
+        for value in forbidden:
+            with self.subTest(value=value):
+                self.assertNotIn(value, text)
 
     def test_scoped_documentation_is_english_except_agents_md(self) -> None:
         paths = (

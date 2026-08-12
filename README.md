@@ -1,6 +1,6 @@
 # TVCMall Skills
 
-A collection of reusable Codex Skills for TVCMall business scenarios. The current Skill provides read-only customer-data queries through the TVCMall Customer MCP and guides first-time MCP connection plus personal `TVCMALL_API_KEY` configuration.
+This repository contains reusable TVCMall Agent Skills. The current Skill is `query-tvcmall-customer-data`, which provides read-only customer-data queries through the TVCMall Customer MCP and guides first-time `TVCMALL_API_KEY` configuration.
 
 ## Skills
 
@@ -10,38 +10,44 @@ A collection of reusable Codex Skills for TVCMall business scenarios. The curren
 
 ## Requirements
 
-- A mainstream agent tool that supports repository Skills and MCP, such as Codex CLI, Claude Code CLI, Gemini CLI, or GitHub Copilot CLI;
+- An agent tool that supports Agent Skills and MCP, such as Codex CLI, Claude Code / Claude Code CLI, Gemini CLI, GitHub Copilot CLI, Cursor CLI, or Qwen Code CLI;
 - Python 3.11 or later;
 - A personal `TVCMALL_API_KEY`.
 
-## Agent Tool Installation
+## Install This Skill In Agent Tools
 
-Install one supported agent tool before cloning this repository. Always prefer the linked official documentation when a package manager, operating system, or authentication method differs from the examples below.
-
-| Tool | Common Installation | Official Documentation |
-| --- | --- | --- |
-| Codex CLI | `curl -fsSL https://chatgpt.com/codex/install.sh | sh`; Windows: `powershell -ExecutionPolicy ByPass -c "irm https://chatgpt.com/codex/install.ps1 | iex"`; npm: `npm install -g @openai/codex` | [Codex CLI](https://learn.chatgpt.com/docs/codex/cli) |
-| Claude Code / Claude Code CLI | `curl -fsSL https://claude.ai/install.sh | bash`; Windows: `irm https://claude.ai/install.ps1 | iex`; WinGet: `winget install Anthropic.ClaudeCode`; npm: `npm install -g @anthropic-ai/claude-code` | [Claude Code setup](https://code.claude.com/docs/en/setup) |
-| Gemini CLI | `npm install -g @google/gemini-cli` | [Gemini CLI installation](https://geminicli.com/docs/get-started/installation/) |
-| GitHub Copilot CLI | `npm install -g @github/copilot`; Windows: `winget install GitHub.Copilot` | [Install GitHub Copilot CLI](https://docs.github.com/en/copilot/how-tos/copilot-cli/set-up-copilot-cli/install-copilot-cli) |
-| Cursor CLI | `curl https://cursor.com/install -fsS | bash`; Windows: `irm 'https://cursor.com/install?win32=true' | iex` | [Cursor CLI installation](https://cursor.com/docs/cli/installation) |
-| Qwen Code CLI | `curl -fsSL https://qwen-code-assets.oss-cn-hangzhou.aliyuncs.com/installation/install-qwen-standalone.sh | bash`; Windows: `irm https://qwen-code-assets.oss-cn-hangzhou.aliyuncs.com/installation/install-qwen-standalone.ps1 | iex` | [Qwen Code overview](https://qwenlm.github.io/qwen-code-docs/en/users/overview/) |
-
-## Skill Installation and Discovery
+Clone this repository first:
 
 ```powershell
 git clone https://github.com/tvcmall-dev/skills.git
 cd skills
-codex
 ```
 
-When an agent starts from the repository directory, it discovers the repository-level Skill under `.agents/skills`. You do not need to clone, build, or run the TVCMall MCP Server locally; this Skill connects to the remote Streamable HTTP MCP.
+The Skill folder to install is `.agents/skills/query-tvcmall-customer-data`. Use the folder as-is; it already contains `SKILL.md`, `agents/openai.yaml`, `scripts/`, and `references/`.
+
+| Agent Tool | Project-Level Install | User-Level Install | Verify or Invoke |
+| --- | --- | --- | --- |
+| Codex CLI | Start `codex` from this repository root so Codex discovers `.agents/skills/query-tvcmall-customer-data` | Copy the folder to `$HOME/.agents/skills/query-tvcmall-customer-data` | Invoke `$query-tvcmall-customer-data`, or ask a matching TVCMall question |
+| Claude Code / Claude Code CLI | Copy the folder to `.claude/skills/query-tvcmall-customer-data` in your project | Copy the folder to `$HOME/.claude/skills/query-tvcmall-customer-data` | Invoke `/query-tvcmall-customer-data`, or let Claude Code select it from the description |
+| Gemini CLI | Run `gemini skills install https://github.com/tvcmall-dev/skills.git --path .agents/skills/query-tvcmall-customer-data --scope workspace --consent`, or `gemini skills link .agents/skills/query-tvcmall-customer-data --scope workspace` from this repository | Use the same `gemini skills install` command with `--scope user`, or copy the folder to `$HOME/.gemini/skills/query-tvcmall-customer-data` | Run `gemini skills list --all` or `/skills list`, then ask a matching TVCMall question |
+| GitHub Copilot CLI | Keep the folder at `.agents/skills/query-tvcmall-customer-data`, copy it to `.github/skills/query-tvcmall-customer-data`, or run `copilot skill add .agents/skills/query-tvcmall-customer-data` | Copy the folder to `$HOME/.copilot/skills/query-tvcmall-customer-data` or `$HOME/.agents/skills/query-tvcmall-customer-data` | In a Copilot CLI session, run `/skills reload` and `/skills info query-tvcmall-customer-data` |
+| Cursor CLI | Keep the folder at `.agents/skills/query-tvcmall-customer-data`, or copy it to `.cursor/skills/query-tvcmall-customer-data` | Copy the folder to `$HOME/.agents/skills/query-tvcmall-customer-data` or `$HOME/.cursor/skills/query-tvcmall-customer-data` | Invoke `/query-tvcmall-customer-data`, attach it with `@query-tvcmall-customer-data`, or ask a matching TVCMall question |
+| Qwen Code CLI | Copy the folder to `.qwen/skills/query-tvcmall-customer-data` in your project | Copy the folder to `$HOME/.qwen/skills/query-tvcmall-customer-data` | Use `/skills` to inspect available Skills, or ask a matching TVCMall question |
+
+Official references:
+
+- [OpenAI Skills](https://learn.chatgpt.com/docs/build-skills)
+- [Claude Code Skills](https://code.claude.com/docs/en/skills)
+- [Gemini CLI Agent Skills](https://geminicli.com/docs/cli/skills/)
+- [GitHub Copilot CLI Skills](https://docs.github.com/en/copilot/how-tos/copilot-cli/customize-copilot/add-skills)
+- [Cursor Agent Skills](https://cursor.com/docs/skills)
+- [Qwen Code Agent Skills](https://qwenlm.github.io/qwen-code-docs/en/users/features/skills/)
 
 ## First-Time Setup
 
 The canonical TVCMall MCP endpoint is `https://openai.tvc-mall.com/mcp`. The `/mcp` path is part of the endpoint; do not remove it or append it a second time.
 
-1. Invoke `$query-tvcmall-customer-data` in Codex, or ask a TVCMall query directly.
+1. Invoke `$query-tvcmall-customer-data`, `/query-tvcmall-customer-data`, or ask a TVCMall query directly.
 2. The Skill checks whether the current session provides the `tvcmall` MCP and expected tools.
 3. If the MCP is not installed, the Skill follows the connection method documented by [TVCMall MCP](https://github.com/tvcmall-dev/mcp) and registers the remote MCP without running a local server.
 4. If you do not have a personal `TVCMALL_API_KEY`, sign in and apply at https://www.tvcmall.com/user/agentkeys.
