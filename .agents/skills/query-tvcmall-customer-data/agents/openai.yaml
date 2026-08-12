@@ -1,0 +1,4 @@
+interface:
+  display_name: "TVCMall Customer Query"
+  short_description: "Query TVCMall products, orders, shipping, points, and balance"
+  default_prompt: "Use $query-tvcmall-customer-data to check my recent TVCMall orders and tracking status."
