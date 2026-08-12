@@ -25,6 +25,9 @@ class ValidationTests(unittest.TestCase):
     def test_accepts_pat_shape(self) -> None:
         self.assertEqual(configurer.validate_api_key("tmcp_v1_demo.secret"), "tmcp_v1_demo.secret")
 
+    def test_accepts_default_catalog_key(self) -> None:
+        self.assertEqual(configurer.validate_api_key("tmcp_catalog.read"), "tmcp_catalog.read")
+
     def test_rejects_whitespace_and_bearer_prefix(self) -> None:
         for value in (" tmcp_v1_demo.secret", "tmcp_v1_demo.secret ", "Bearer tmcp_v1_demo.secret"):
             with self.subTest(value=value), self.assertRaises(ValueError):
@@ -52,6 +55,12 @@ class TransformTests(unittest.TestCase):
         parsed = tomllib.loads(updated)
         self.assertEqual(parsed["mcp_servers"]["tvcmall"]["url"], configurer.MCP_URL)
         self.assertEqual(parsed["mcp_servers"]["tvcmall"]["http_headers"]["TVCMALL_API_KEY"], "tmcp_v1_demo.secret")
+
+    def test_adds_catalog_default_to_empty_config(self) -> None:
+        updated = configurer.upsert_tvcmall_config("", "tmcp_catalog.read")
+        parsed = tomllib.loads(updated)
+        self.assertEqual(parsed["mcp_servers"]["tvcmall"]["url"], configurer.MCP_URL)
+        self.assertEqual(parsed["mcp_servers"]["tvcmall"]["http_headers"]["TVCMALL_API_KEY"], "tmcp_catalog.read")
 
     def test_preserves_other_servers_and_replaces_tvcmall_subtables(self) -> None:
         source = '''model = "gpt-5"
@@ -229,6 +238,21 @@ class CliTests(unittest.TestCase):
             self.assertEqual(code, 0)
             self.assertNotIn(secret, stdout.getvalue() + stderr.getvalue())
             self.assertIn(secret, path.read_text(encoding="utf-8"))
+
+    def test_main_uses_catalog_default_when_key_prompt_is_empty(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "config.toml"
+            stdout = io.StringIO()
+            stderr = io.StringIO()
+            with mock.patch.object(configurer.getpass, "getpass", return_value=""):
+                with contextlib.redirect_stdout(stdout), contextlib.redirect_stderr(stderr):
+                    code = configurer.main(["--config", str(path), "--yes"])
+            self.assertEqual(code, 0)
+            parsed = tomllib.loads(path.read_text(encoding="utf-8"))
+            self.assertEqual(
+                parsed["mcp_servers"]["tvcmall"]["http_headers"]["TVCMALL_API_KEY"],
+                "tmcp_catalog.read",
+            )
 
     def test_main_rejects_invalid_key_without_writing(self) -> None:
         with tempfile.TemporaryDirectory() as directory:

@@ -8,6 +8,8 @@
 - Use bounded pagination. For batch tracking, pass no more than 50 order numbers from the current result set per call.
 - List queries default to `page=1` and `page_size=20`. When the user specifies a count, set `page_size` to that count, up to 50; for example, use `page=1` and `page_size=10` for "10 orders."
 - `tvcmall_list_orders` has no sorting parameter. Present results in the order returned on the first page; when the tool schema or response does not prove sorting semantics, do not claim that results are strictly sorted by time.
+- Product and shipping tools can be attempted with the default `tmcp_catalog.read` header without asking the user to apply for a personal Key first.
+- Account tools require a personal Key: orders, tracking, points, and balance must not be attempted with only `tmcp_catalog.read`.
 
 ## Routing Table
 
@@ -41,7 +43,8 @@
 
 ## Stable Errors
 
-- `AUTH_REQUIRED`: guide the user through configuring or replacing the Key; do not ask for the Key in chat.
+- If a product or shipping tool returns `AUTH_REQUIRED` or `401`, explain that default `catalog.read` access was rejected and guide the user to apply for a personal Key; do not ask for the Key in chat.
+- `AUTH_REQUIRED` for account tools: guide the user through configuring or replacing the personal Key; do not ask for the Key in chat.
 - `PERMISSION_DENIED`: explain that a scope or route allowlist may be missing; do not try to bypass it.
 - `RATE_LIMITED`: suggest waiting before retrying.
 - `API_UNAVAILABLE`: explain that the MCP or WebApi is temporarily unavailable; do not fabricate results.

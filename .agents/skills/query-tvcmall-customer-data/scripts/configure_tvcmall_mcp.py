@@ -14,6 +14,7 @@ import sys
 
 
 MCP_URL = "https://openai.tvc-mall.com/mcp"
+CATALOG_DEFAULT_API_KEY = "tmcp_catalog.read"
 API_KEY_PATTERN = re.compile(r"^tmcp_v1_[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+$")
 
 
@@ -25,9 +26,20 @@ class ConfigureResult:
 
 
 def validate_api_key(value: str) -> str:
+    if value == CATALOG_DEFAULT_API_KEY:
+        return value
     if value != value.strip() or not API_KEY_PATTERN.fullmatch(value):
-        raise ValueError("TVCMALL_API_KEY must match tmcp_v1_{tokenId}.{secret} without Bearer")
+        raise ValueError(
+            "TVCMALL_API_KEY must be tmcp_catalog.read or match "
+            "tmcp_v1_{tokenId}.{secret} without Bearer"
+        )
     return value
+
+
+def resolve_api_key_input(value: str) -> str:
+    if value == "":
+        return CATALOG_DEFAULT_API_KEY
+    return validate_api_key(value)
 
 
 def toml_string(value: str) -> str:
@@ -197,7 +209,9 @@ def main(argv: Sequence[str] | None = None) -> int:
             print("Configuration cancelled.")
             return 1
     try:
-        api_key = validate_api_key(getpass.getpass("TVCMALL_API_KEY: "))
+        api_key = resolve_api_key_input(
+            getpass.getpass(f"TVCMALL_API_KEY (leave empty for {CATALOG_DEFAULT_API_KEY}): ")
+        )
         result = configure_file(config_path, api_key)
     except (OSError, RuntimeError, ValueError) as exc:
         print(f"Configuration failed: {exc}", file=sys.stderr)

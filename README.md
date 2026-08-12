@@ -1,18 +1,18 @@
 # TVCMall Skills
 
-This repository contains reusable TVCMall Agent Skills. The current Skill is `query-tvcmall-customer-data`, which provides read-only customer-data queries through the TVCMall Customer MCP and guides first-time `TVCMALL_API_KEY` configuration.
+This repository contains reusable TVCMall Agent Skills. The current Skill is `query-tvcmall-customer-data`, which provides read-only TVCMall queries through the TVCMall Customer MCP, supports default catalog access, and guides personal `TVCMALL_API_KEY` configuration only when required.
 
 ## Skills
 
 | Skill | Capabilities |
 | --- | --- |
-| `query-tvcmall-customer-data` | Products, pre-order shipping estimates, Orders, Tracking, Points, and Balance queries; guides MCP setup on first use |
+| `query-tvcmall-customer-data` | Products and pre-order shipping estimates with default `catalog.read`; Orders, Tracking, Points, and Balance with a personal Key |
 
 ## Requirements
 
 - An agent tool that supports Agent Skills and MCP, such as Codex CLI, Claude Code / Claude Code CLI, Gemini CLI, GitHub Copilot CLI, Cursor CLI, or Qwen Code CLI;
 - Python 3.11 or later;
-- A personal `TVCMALL_API_KEY`.
+- A personal `TVCMALL_API_KEY` only for account data, or when default catalog access returns `401`.
 
 ## Install This Skill In Agent Tools
 
@@ -50,11 +50,20 @@ The canonical TVCMall MCP endpoint is `https://openai.tvc-mall.com/mcp`. The `/m
 1. Invoke `$query-tvcmall-customer-data`, `/query-tvcmall-customer-data`, or ask a TVCMall query directly.
 2. The Skill checks whether the current session provides the `tvcmall` MCP and expected tools.
 3. If the MCP is not installed, the Skill follows the connection method documented by [TVCMall MCP](https://github.com/tvcmall-dev/mcp) and registers the remote MCP without running a local server.
-4. If you do not have a personal `TVCMALL_API_KEY`, sign in and apply at https://www.tvcmall.com/user/agentkeys.
-5. After you explicitly confirm plaintext storage, the local script reads the Key through a terminal prompt with input echo disabled and updates the user-level Codex `config.toml`.
-6. Restart Codex or start a new session, then check the `tvcmall` tools and call `tvcmall_auth_status`.
+4. If you do not have a personal `TVCMALL_API_KEY`, leave the script prompt empty. The Skill stores `tmcp_catalog.read`; the header must not be omitted or left empty, and unregistered users can use the default `catalog.read` access for product and shipping queries.
+5. Only if a catalog query returns `401` or `AUTH_REQUIRED`, or if you need Orders, Tracking, Points, or Balance, sign in and apply for a personal Key at https://www.tvcmall.com/user/agentkeys.
+6. After you explicitly confirm plaintext storage for a personal Key, the local script reads the Key through a terminal prompt with input echo disabled and updates the user-level Codex `config.toml`.
+7. Restart Codex or start a new session, then check the `tvcmall` tools and call `tvcmall_auth_status`.
 
-The generated configuration looks like this. `<TVCMALL_PAT>` is a placeholder only:
+The default catalog configuration looks like this:
+
+```toml
+[mcp_servers.tvcmall]
+url = "https://openai.tvc-mall.com/mcp"
+http_headers = { "TVCMALL_API_KEY" = "tmcp_catalog.read" }
+```
+
+For account tools, replace the header value with a personal PAT. `<TVCMALL_PAT>` is a placeholder only:
 
 ```toml
 [mcp_servers.tvcmall]
@@ -62,7 +71,7 @@ url = "https://openai.tvc-mall.com/mcp"
 http_headers = { "TVCMALL_API_KEY" = "<TVCMALL_PAT>" }
 ```
 
-The Key is stored in plaintext in the user-level Codex configuration by the current design. The default path is `%USERPROFILE%\.codex\config.toml` on Windows and `~/.codex/config.toml` on macOS and Linux. If `CODEX_HOME` is set, the script uses `config.toml` under that directory.
+The configured header value is stored in plaintext in the user-level Codex configuration by the current design. The default path is `%USERPROFILE%\.codex\config.toml` on Windows and `~/.codex/config.toml` on macOS and Linux. If `CODEX_HOME` is set, the script uses `config.toml` under that directory.
 
 ## Complete Capability List
 
@@ -70,17 +79,17 @@ All business capabilities are read-only. Detailed parameters, defaults, and WebA
 
 | Category | Tool | External Parameters | Capability |
 | --- | --- | --- | --- |
-| Auth | `tvcmall_auth_status` | None | Checks whether the current MCP session loaded a Key; it does not validate whether the Key is authorized |
-| Products | `tvcmall_search_products` | `query`, `page`, `page_size` | Searches products by SKU or keyword with pagination |
-| Products | `tvcmall_get_product_detail` | `product_id` | Retrieves one product detail record; the ID must come from search results |
-| Shipping | `tvcmall_estimate_shipping` | `sku`, `quantity`, `countrycode` | Estimates pre-order shipping cost for a product |
-| Orders | `tvcmall_list_orders` | `start_date`, `end_date`, `status`, `page`, `page_size` | Lists orders with pagination |
-| Orders | `tvcmall_get_order_detail` | `order_id` | Retrieves order items, totals, and masked shipping information |
-| Tracking | `tvcmall_get_tracking_info` | `order_id` | Retrieves tracking history and order shipping cost for one order |
-| Tracking | `tvcmall_batch_get_tracking` | `order_ids` | Retrieves tracking for 1 to 50 orders |
-| Points | `tvcmall_get_points` | None | Retrieves the points summary |
-| Points | `tvcmall_list_point_records` | `direction`, `page`, `page_size` | Lists points ledger records with pagination |
-| Balance | `tvcmall_list_balance_records` | `direction`, `page`, `page_size` | Lists balance ledger records with pagination |
+| Auth | `tvcmall_auth_status` | None | Checks whether the current MCP session loaded a header value; it does not validate authorization |
+| Products | `tvcmall_search_products` | `query`, `page`, `page_size` | Searches products by SKU or keyword with pagination; default `tmcp_catalog.read` is allowed unless the server returns `401` |
+| Products | `tvcmall_get_product_detail` | `product_id` | Retrieves one product detail record; the ID must come from search results; default `catalog.read` is allowed unless rejected |
+| Shipping | `tvcmall_estimate_shipping` | `sku`, `quantity`, `countrycode` | Estimates pre-order shipping cost for a product; default `catalog.read` is allowed unless rejected |
+| Orders | `tvcmall_list_orders` | `start_date`, `end_date`, `status`, `page`, `page_size` | Lists orders with pagination; requires a personal Key |
+| Orders | `tvcmall_get_order_detail` | `order_id` | Retrieves order items, totals, and masked shipping information; requires a personal Key |
+| Tracking | `tvcmall_get_tracking_info` | `order_id` | Retrieves tracking history and order shipping cost for one order; requires a personal Key |
+| Tracking | `tvcmall_batch_get_tracking` | `order_ids` | Retrieves tracking for 1 to 50 orders; requires a personal Key |
+| Points | `tvcmall_get_points` | None | Retrieves the points summary; requires a personal Key |
+| Points | `tvcmall_list_point_records` | `direction`, `page`, `page_size` | Lists points ledger records with pagination; requires a personal Key |
+| Balance | `tvcmall_list_balance_records` | `direction`, `page`, `page_size` | Lists balance ledger records with pagination; requires a personal Key |
 
 The Skill does not support placing orders, making payments, cancelling orders, changing addresses, redeeming points, or exporting files.
 
@@ -97,7 +106,8 @@ Show my recent balance expense records.
 
 ## Security
 
-- Never commit a real `TVCMALL_API_KEY` to Git, and never put it in chat, command arguments, logs, or screenshots.
+- Never commit a real personal `TVCMALL_API_KEY` to Git, and never put it in chat, command arguments, logs, or screenshots.
+- The default `tmcp_catalog.read` value is not a personal PAT; use it only for default `catalog.read` access.
 - Use the complete personal PAT as `TVCMALL_API_KEY`; do not add a `Bearer ` prefix.
 - Do not configure an `Authorization` header for the inbound MCP connection.
 - Each user must use their own Key. Do not use a website password, website login token, OAuth token, or shared credential.

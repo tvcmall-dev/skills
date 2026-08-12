@@ -61,6 +61,7 @@ class SkillContractTests(unittest.TestCase):
         self.assertIn('value: "tvcmall"', text)
         self.assertIn('transport: "streamable_http"', text)
         self.assertIn(f'url: "{ENDPOINT}"', text)
+        self.assertNotIn("\n      headers:", text)
         self.assertIn("$query-tvcmall-customer-data", text)
 
     def test_skill_links_both_references_and_setup_script(self) -> None:
@@ -82,12 +83,22 @@ class SkillContractTests(unittest.TestCase):
                 self.assertIn(value, setup)
         self.assertIn("Do not let another process edit", setup)
         for value in (
+            "tmcp_catalog.read",
+            "catalog.read",
+            "Only after a catalog query returns `401`",
+        ):
+            with self.subTest(value=value):
+                self.assertIn(value, setup)
+        for value in (
             "page=1",
             "page_size=20",
             "page_size=10",
             "do not claim that results are strictly sorted by time",
             "If `order_id` is missing",
             "When `direction` is omitted, use `all`",
+            "without asking the user to apply for a personal Key first",
+            "If a product or shipping tool returns `AUTH_REQUIRED`",
+            "Account tools require a personal Key",
         ):
             with self.subTest(value=value):
                 self.assertIn(value, routing)
@@ -241,6 +252,9 @@ class SkillContractTests(unittest.TestCase):
             ENDPOINT,
             "https://www.tvcmall.com/user/agentkeys",
             "TVCMALL_API_KEY",
+            "tmcp_catalog.read",
+            "catalog.read",
+            "401",
             "Products",
             "Orders",
             "Tracking",
