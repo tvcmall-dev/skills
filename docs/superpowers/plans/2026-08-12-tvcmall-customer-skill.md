@@ -1,6 +1,6 @@
-# TVCMall Customer Skill Implementation Plan
+﻿# TVCMall Customer Skill Implementation Plan
 
-> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
+> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [x]`) syntax for tracking.
 
 **Goal:** Build a standard repository-scoped Codex Skill that configures the TVCMall remote MCP safely and routes read-only customer queries to the correct MCP tools.
 
@@ -34,7 +34,7 @@
 - Create: `.agents/skills/query-tvcmall-customer-data/scripts/`
 - Create: `.agents/skills/query-tvcmall-customer-data/references/`
 
-- [ ] **Step 1: Generate the official Skill skeleton**
+- [x] **Step 1: Generate the official Skill skeleton**
 
 Run:
 
@@ -50,7 +50,7 @@ python C:\Users\Administrator\.codex\skills\.system\skill-creator\scripts\init_s
 
 Expected: the generator creates `SKILL.md`, `agents/openai.yaml`, `scripts/`, and `references/` under `.agents/skills/query-tvcmall-customer-data` without example placeholder files.
 
-- [ ] **Step 2: Add repository hygiene files**
+- [x] **Step 2: Add repository hygiene files**
 
 Create `.gitignore` with:
 
@@ -94,7 +94,7 @@ Create `AGENTS.md` with these stable rules:
 - Run the Skill validator, unit tests, secret scan, and `git diff --check` before completion.
 ```
 
-- [ ] **Step 3: Replace generated placeholders with a valid minimal Skill**
+- [x] **Step 3: Replace generated placeholders with a valid minimal Skill**
 
 Replace `SKILL.md` with a minimal valid file so the repository never commits generated markers:
 
@@ -111,17 +111,17 @@ Use the `tvcmall` MCP dependency for TVCMall read-only customer queries.
 Before a business query, confirm the dependency is available and follow [references/mcp-setup.md](references/mcp-setup.md) when setup is required. Read [references/tool-routing.md](references/tool-routing.md) before selecting business tools.
 ```
 
-- [ ] **Step 4: Run the template validator**
+- [x] **Step 4: Run the template validator**
 
 Run:
 
 ```powershell
-python C:\Users\Administrator\.codex\skills\.system\skill-creator\scripts\quick_validate.py .agents\skills\query-tvcmall-customer-data
+python -X utf8 C:\Users\Administrator\.codex\skills\.system\skill-creator\scripts\quick_validate.py .agents\skills\query-tvcmall-customer-data
 ```
 
 Expected: `Skill is valid!`
 
-- [ ] **Step 5: Commit the skeleton**
+- [x] **Step 5: Commit the skeleton**
 
 ```powershell
 git add .gitignore AGENTS.md .agents/skills/query-tvcmall-customer-data
@@ -134,7 +134,7 @@ git commit -m "chore: scaffold TVCMall customer skill"
 - Create: `tests/test_configure_tvcmall_mcp.py`
 - Create: `.agents/skills/query-tvcmall-customer-data/scripts/configure_tvcmall_mcp.py`
 
-- [ ] **Step 1: Write failing tests for Key validation and TOML escaping**
+- [x] **Step 1: Write failing tests for Key validation and TOML escaping**
 
 Create the test module and load the hyphenated Skill script by path:
 
@@ -169,7 +169,7 @@ class ValidationTests(unittest.TestCase):
         self.assertEqual(configurer.toml_string('a"b\\c'), '"a\\"b\\\\c"')
 ```
 
-- [ ] **Step 2: Run the validation tests and verify RED**
+- [x] **Step 2: Run the validation tests and verify RED**
 
 Run:
 
@@ -179,7 +179,7 @@ python -m unittest tests.test_configure_tvcmall_mcp.ValidationTests -v
 
 Expected: FAIL because `configure_tvcmall_mcp.py` or its functions do not exist.
 
-- [ ] **Step 3: Implement Key validation and TOML string encoding**
+- [x] **Step 3: Implement Key validation and TOML string encoding**
 
 Create the script with:
 
@@ -206,7 +206,7 @@ def toml_string(value: str) -> str:
     return f'"{escaped}"'
 ```
 
-- [ ] **Step 4: Run the validation tests and verify GREEN**
+- [x] **Step 4: Run the validation tests and verify GREEN**
 
 Run:
 
@@ -216,7 +216,7 @@ python -m unittest tests.test_configure_tvcmall_mcp.ValidationTests -v
 
 Expected: 3 tests pass.
 
-- [ ] **Step 5: Write failing transformation tests**
+- [x] **Step 5: Write failing transformation tests**
 
 Append:
 
@@ -287,7 +287,7 @@ OLD = "value"
         self.assertEqual(parsed["mcp_servers"]["tvcmall"]["url"], configurer.MCP_URL)
 ```
 
-- [ ] **Step 6: Run transformation tests and verify RED**
+- [x] **Step 6: Run transformation tests and verify RED**
 
 Run:
 
@@ -297,7 +297,7 @@ python -m unittest tests.test_configure_tvcmall_mcp.TransformTests -v
 
 Expected: FAIL because `upsert_tvcmall_config` is not defined.
 
-- [ ] **Step 7: Implement section-aware replacement**
+- [x] **Step 7: Implement section-aware replacement**
 
 Add `import tomllib` and implement:
 
@@ -359,7 +359,7 @@ def upsert_tvcmall_config(source: str, api_key: str) -> str:
     return updated
 ```
 
-- [ ] **Step 8: Run all pure-function tests**
+- [x] **Step 8: Run all pure-function tests**
 
 Run:
 
@@ -367,9 +367,9 @@ Run:
 python -m unittest tests.test_configure_tvcmall_mcp.ValidationTests tests.test_configure_tvcmall_mcp.TransformTests -v
 ```
 
-Expected: 10 tests pass.
+Expected: 10 tests pass. Final implementation adds two hardening tests for control-character escaping and file-level CRLF preservation.
 
-- [ ] **Step 9: Commit the pure transformation**
+- [x] **Step 9: Commit the pure transformation**
 
 ```powershell
 git add tests/test_configure_tvcmall_mcp.py .agents/skills/query-tvcmall-customer-data/scripts/configure_tvcmall_mcp.py
@@ -382,7 +382,7 @@ git commit -m "feat: transform Codex TVCMall MCP config"
 - Modify: `tests/test_configure_tvcmall_mcp.py`
 - Modify: `.agents/skills/query-tvcmall-customer-data/scripts/configure_tvcmall_mcp.py`
 
-- [ ] **Step 1: Write failing file-update tests**
+- [x] **Step 1: Write failing file-update tests**
 
 Append imports and tests:
 
@@ -448,7 +448,7 @@ class FileUpdateTests(unittest.TestCase):
             self.assertEqual(path.read_text(encoding="utf-8"), original)
 ```
 
-- [ ] **Step 2: Run file-update tests and verify RED**
+- [x] **Step 2: Run file-update tests and verify RED**
 
 Run:
 
@@ -458,7 +458,7 @@ python -m unittest tests.test_configure_tvcmall_mcp.FileUpdateTests -v
 
 Expected: FAIL because `configure_file` and the result type do not exist.
 
-- [ ] **Step 3: Implement backup and atomic replacement**
+- [x] **Step 3: Implement backup and atomic replacement**
 
 Add imports and types:
 
@@ -505,7 +505,7 @@ def configure_file(config_path: Path, api_key: str) -> ConfigureResult:
     return ConfigureResult(config_path, backup_path, True)
 ```
 
-- [ ] **Step 4: Run file-update tests and verify GREEN**
+- [x] **Step 4: Run file-update tests and verify GREEN**
 
 Run:
 
@@ -515,7 +515,7 @@ python -m unittest tests.test_configure_tvcmall_mcp.FileUpdateTests -v
 
 Expected: 5 tests pass.
 
-- [ ] **Step 5: Write failing CLI tests**
+- [x] **Step 5: Write failing CLI tests**
 
 Append:
 
@@ -526,7 +526,7 @@ class CliTests(unittest.TestCase):
             self.assertEqual(configurer.resolve_config_path(), Path("C:/tmp/codex-home/config.toml"))
 
     def test_main_reads_key_with_getpass_and_does_not_print_it(self) -> None:
-        secret = "tmcp_v1_private.secret"
+        secret = "tmcp_v1_fake.secret"
         with tempfile.TemporaryDirectory() as directory:
             path = Path(directory) / "config.toml"
             stdout = io.StringIO()
@@ -550,7 +550,7 @@ class CliTests(unittest.TestCase):
             self.assertNotIn("invalid", stderr.getvalue())
 ```
 
-- [ ] **Step 6: Run CLI tests and verify RED**
+- [x] **Step 6: Run CLI tests and verify RED**
 
 Run:
 
@@ -560,7 +560,7 @@ python -m unittest tests.test_configure_tvcmall_mcp.CliTests -v
 
 Expected: FAIL because `resolve_config_path`, `getpass`, and `main` do not exist.
 
-- [ ] **Step 7: Implement the no-echo CLI**
+- [x] **Step 7: Implement the no-echo CLI**
 
 Add imports:
 
@@ -615,7 +615,7 @@ if __name__ == "__main__":
     raise SystemExit(main())
 ```
 
-- [ ] **Step 8: Run the complete script test suite**
+- [x] **Step 8: Run the complete script test suite**
 
 Run:
 
@@ -623,9 +623,9 @@ Run:
 python -m unittest tests.test_configure_tvcmall_mcp -v
 ```
 
-Expected: 17 tests pass and no test touches the real user config.
+Expected: 18 tests pass and no test touches the real user config. Final implementation adds two hardening tests after this planned checkpoint.
 
-- [ ] **Step 9: Compile the script**
+- [x] **Step 9: Compile the script**
 
 Run:
 
@@ -635,7 +635,7 @@ python -m py_compile .agents\skills\query-tvcmall-customer-data\scripts\configur
 
 Expected: exit 0 with no output.
 
-- [ ] **Step 10: Commit file safety and CLI**
+- [x] **Step 10: Commit file safety and CLI**
 
 ```powershell
 git add tests/test_configure_tvcmall_mcp.py .agents/skills/query-tvcmall-customer-data/scripts/configure_tvcmall_mcp.py
@@ -651,7 +651,7 @@ git commit -m "feat: configure TVCMall MCP for Codex"
 - Create: `.agents/skills/query-tvcmall-customer-data/references/tool-routing.md`
 - Create: `tests/test_skill_contract.py`
 
-- [ ] **Step 1: Write failing contract tests**
+- [x] **Step 1: Write failing contract tests**
 
 Create:
 
@@ -702,7 +702,7 @@ class SkillContractTests(unittest.TestCase):
         self.assertEqual(leaked, [])
 ```
 
-- [ ] **Step 2: Run contract tests and verify RED**
+- [x] **Step 2: Run contract tests and verify RED**
 
 Run:
 
@@ -712,7 +712,7 @@ python -m unittest tests.test_skill_contract -v
 
 Expected: FAIL because the complete references and metadata do not exist yet.
 
-- [ ] **Step 3: Write `mcp-setup.md`**
+- [x] **Step 3: Write `mcp-setup.md`**
 
 Include these exact sections and rules:
 
@@ -755,7 +755,7 @@ Ask the user to restart Codex or create a new session. Confirm that `tvcmall` to
 - Never fall back to HTTP.
 ```
 
-- [ ] **Step 4: Write `tool-routing.md`**
+- [x] **Step 4: Write `tool-routing.md`**
 
 Include the exact tool table from the approved design plus these rules:
 
@@ -808,7 +808,7 @@ Include the exact tool table from the approved design plus these rules:
 - `SESSION_NOT_FOUND`: reconnect or restart Codex.
 ```
 
-- [ ] **Step 5: Replace `SKILL.md` with the complete imperative workflow**
+- [x] **Step 5: Replace `SKILL.md` with the complete imperative workflow**
 
 Replace the complete file with:
 
@@ -839,7 +839,7 @@ Read [references/tool-routing.md](references/tool-routing.md) completely before 
 - Return a direct answer followed by the minimum useful structured detail.
 ```
 
-- [ ] **Step 6: Regenerate and extend `agents/openai.yaml`**
+- [x] **Step 6: Regenerate and extend `agents/openai.yaml`**
 
 First regenerate the interface deterministically:
 
@@ -863,18 +863,18 @@ dependencies:
       url: "https://mcpserver.tvc-mall.com"
 ```
 
-- [ ] **Step 7: Run Skill and contract validation**
+- [x] **Step 7: Run Skill and contract validation**
 
 Run:
 
 ```powershell
-python C:\Users\Administrator\.codex\skills\.system\skill-creator\scripts\quick_validate.py .agents\skills\query-tvcmall-customer-data
+python -X utf8 C:\Users\Administrator\.codex\skills\.system\skill-creator\scripts\quick_validate.py .agents\skills\query-tvcmall-customer-data
 python -m unittest tests.test_skill_contract -v
 ```
 
 Expected: `Skill is valid!` and 4 tests pass.
 
-- [ ] **Step 8: Commit the complete Skill contract**
+- [x] **Step 8: Commit the complete Skill contract**
 
 ```powershell
 git add .agents/skills/query-tvcmall-customer-data tests/test_skill_contract.py
@@ -887,7 +887,7 @@ git commit -m "feat: add TVCMall query workflow"
 - Create: `README.md`
 - Modify: `tests/test_skill_contract.py`
 
-- [ ] **Step 1: Write a failing README contract test**
+- [x] **Step 1: Write a failing README contract test**
 
 Append:
 
@@ -914,7 +914,7 @@ Append:
         self.assertNotIn("115.175.225.101", text)
 ```
 
-- [ ] **Step 2: Run the README test and verify RED**
+- [x] **Step 2: Run the README test and verify RED**
 
 Run:
 
@@ -924,7 +924,7 @@ python -m unittest tests.test_skill_contract.SkillContractTests.test_readme_cove
 
 Expected: FAIL because root `README.md` does not exist.
 
-- [ ] **Step 3: Write the standard README**
+- [x] **Step 3: Write the standard README**
 
 Create `README.md` with this complete content:
 
@@ -999,7 +999,7 @@ Key 会按照当前设计明文保存在用户级 Codex 配置中。Windows 默�
 ## 验证
 
 ```powershell
-python C:\Users\Administrator\.codex\skills\.system\skill-creator\scripts\quick_validate.py .agents\skills\query-tvcmall-customer-data
+python -X utf8 C:\Users\Administrator\.codex\skills\.system\skill-creator\scripts\quick_validate.py .agents\skills\query-tvcmall-customer-data
 python -m unittest discover -s tests -v
 rg -n -F 'https://mcpserver.tvc-mall.com' README.md .agents\skills\query-tvcmall-customer-data
 git diff --check
@@ -1023,7 +1023,7 @@ git diff --check
 - [OpenAI MCP](https://learn.chatgpt.com/docs/extend/mcp)
 ```
 
-- [ ] **Step 4: Run README and all contract tests**
+- [x] **Step 4: Run README and all contract tests**
 
 Run:
 
@@ -1033,7 +1033,7 @@ python -m unittest tests.test_skill_contract -v
 
 Expected: 5 tests pass.
 
-- [ ] **Step 5: Commit README and its contract**
+- [x] **Step 5: Commit README and its contract**
 
 ```powershell
 git add README.md tests/test_skill_contract.py
@@ -1047,7 +1047,7 @@ git commit -m "docs: add TVCMall Skills README"
 - Modify if required: `README.md`
 - Modify if required: `tests/*.py`
 
-- [ ] **Step 1: Run all unit and contract tests**
+- [x] **Step 1: Run all unit and contract tests**
 
 Run:
 
@@ -1055,19 +1055,19 @@ Run:
 python -m unittest discover -s tests -v
 ```
 
-Expected: all 23 planned tests pass.
+Expected: all 32 final tests pass: 23 planned tests plus CRLF preservation, control-character escaping, strict ASCII PAT validation, multiline-string and array-table preservation, concurrent-change detection, backup-path reporting, tracked-file secret scanning, and forward-test gap contracts.
 
-- [ ] **Step 2: Validate the Skill package**
+- [x] **Step 2: Validate the Skill package**
 
 Run:
 
 ```powershell
-python C:\Users\Administrator\.codex\skills\.system\skill-creator\scripts\quick_validate.py .agents\skills\query-tvcmall-customer-data
+python -X utf8 C:\Users\Administrator\.codex\skills\.system\skill-creator\scripts\quick_validate.py .agents\skills\query-tvcmall-customer-data
 ```
 
 Expected: `Skill is valid!`
 
-- [ ] **Step 3: Verify Python syntax**
+- [x] **Step 3: Verify Python syntax**
 
 Run:
 
@@ -1077,7 +1077,7 @@ python -m py_compile .agents\skills\query-tvcmall-customer-data\scripts\configur
 
 Expected: exit 0 with no output.
 
-- [ ] **Step 4: Run repository-wide endpoint and secret scans**
+- [x] **Step 4: Run repository-wide endpoint and secret scans**
 
 Run:
 
@@ -1096,7 +1096,7 @@ rg -n -F 'https://mcpserver.tvc-mall.com' README.md .agents\skills\query-tvcmall
 
 Expected: no old endpoint and no plausible real Key; the exact HTTPS endpoint appears in README, metadata, setup reference, and script.
 
-- [ ] **Step 5: Check formatting and worktree scope**
+- [x] **Step 5: Check formatting and worktree scope**
 
 Run:
 
@@ -1107,7 +1107,7 @@ git status --short
 
 Expected: no whitespace errors; only intentional plan/progress files may remain untracked or modified.
 
-- [ ] **Step 6: Perform a manual Skill workflow review**
+- [x] **Step 6: Perform a manual Skill workflow review**
 
 Verify against the approved design:
 
@@ -1120,7 +1120,7 @@ Verify against the approved design:
 
 Expected: every scenario has one deterministic safe path with no contradiction between `SKILL.md`, references, README, and tests.
 
-- [ ] **Step 7: Commit verification fixes if any**
+- [x] **Step 7: Commit verification fixes if any**
 
 If verification required changes:
 
@@ -1136,17 +1136,17 @@ If no changes were required, do not create an empty commit.
 **Files:**
 - Modify: `docs/superpowers/plans/2026-08-12-tvcmall-customer-skill.md`
 
-- [ ] **Step 1: Mark every completed plan checkbox**
+- [x] **Step 1: Mark every completed plan checkbox**
 
 Update this plan so each executed step uses `- [x]`. Record any intentional deviation next to the affected step.
 
-- [ ] **Step 2: Run final evidence commands**
+- [x] **Step 2: Run final evidence commands**
 
 Run:
 
 ```powershell
 python -m unittest discover -s tests -v
-python C:\Users\Administrator\.codex\skills\.system\skill-creator\scripts\quick_validate.py .agents\skills\query-tvcmall-customer-data
+python -X utf8 C:\Users\Administrator\.codex\skills\.system\skill-creator\scripts\quick_validate.py .agents\skills\query-tvcmall-customer-data
 git diff --check
 git status --short --branch
 git log --oneline --decorate -8
@@ -1154,13 +1154,13 @@ git log --oneline --decorate -8
 
 Expected: tests and Skill validation pass; Git output shows the planned commits and no unintended files.
 
-- [ ] **Step 3: Commit the completed implementation plan record**
+- [x] **Step 3: Commit the completed implementation plan record**
 
 ```powershell
 git add docs/superpowers/plans/2026-08-12-tvcmall-customer-skill.md
 git commit -m "docs: complete TVCMall skill implementation plan"
 ```
 
-- [ ] **Step 4: Use the branch-finishing workflow**
+- [x] **Step 4: Use the branch-finishing workflow**
 
 Invoke `superpowers:finishing-a-development-branch` and present the supported integration choices. Do not push unless the user explicitly selects a push/PR option.
