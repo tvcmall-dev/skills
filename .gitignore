@@ -10,5 +10,7 @@ venv/
 .env.*
 !.env.example
 config.toml
+AGENTS.md
+docs/
 *.bak
 *.tmp

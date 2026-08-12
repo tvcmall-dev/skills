@@ -12,6 +12,26 @@ ENDPOINT = "https://mcpserver.tvc-mall.com"
 
 
 class SkillContractTests(unittest.TestCase):
+    def test_local_project_guidance_is_ignored_and_untracked(self) -> None:
+        for relative in (
+            "AGENTS.md",
+            "docs/superpowers/specs/2026-08-12-tvcmall-customer-skill-design.md",
+        ):
+            with self.subTest(relative=relative):
+                ignored = subprocess.run(
+                    ["git", "check-ignore", "-q", relative],
+                    cwd=ROOT,
+                    check=False,
+                )
+                tracked = subprocess.run(
+                    ["git", "ls-files", "--error-unmatch", relative],
+                    cwd=ROOT,
+                    check=False,
+                    capture_output=True,
+                )
+                self.assertEqual(ignored.returncode, 0)
+                self.assertNotEqual(tracked.returncode, 0)
+
     def test_frontmatter_contains_only_name_and_description(self) -> None:
         text = (SKILL / "SKILL.md").read_text(encoding="utf-8")
         frontmatter = text.split("---", 2)[1]
@@ -39,20 +59,32 @@ class SkillContractTests(unittest.TestCase):
     def test_references_close_key_and_query_routing_gaps(self) -> None:
         setup = (SKILL / "references/mcp-setup.md").read_text(encoding="utf-8")
         routing = (SKILL / "references/tool-routing.md").read_text(encoding="utf-8")
-        for value in ("立即撤销", "申请新 Key", "不要复述"):
+        for value in ("revoke it immediately", "request a new Key", "do not repeat it"):
             with self.subTest(value=value):
                 self.assertIn(value, setup)
-        self.assertIn("不要让其他进程同时编辑", setup)
+        self.assertIn("Do not let another process edit", setup)
         for value in (
             "page=1",
             "page_size=20",
             "page_size=10",
-            "不要声称结果已严格按时间排序",
-            "缺少 `order_id`",
-            "省略 `direction` 时使用 `all`",
+            "do not claim that results are strictly sorted by time",
+            "If `order_id` is missing",
+            "When `direction` is omitted, use `all`",
         ):
             with self.subTest(value=value):
                 self.assertIn(value, routing)
+
+    def test_scoped_documentation_is_english(self) -> None:
+        paths = (
+            ROOT / "README.md",
+            SKILL / "SKILL.md",
+            SKILL / "references/mcp-setup.md",
+            SKILL / "references/tool-routing.md",
+        )
+        for path in paths:
+            with self.subTest(path=path):
+                text = path.read_text(encoding="utf-8")
+                self.assertIsNone(re.search(r"[\u3400-\u9fff]", text))
 
     def test_no_old_endpoint_or_plausible_real_pat(self) -> None:
         tracked = subprocess.run(
@@ -88,14 +120,14 @@ class SkillContractTests(unittest.TestCase):
             ENDPOINT,
             "https://www.tvcmall.com/user/agentkeys",
             "TVCMALL_API_KEY",
-            "商品",
-            "订单",
-            "物流",
-            "积分",
-            "余额",
-            "安全",
-            "验证",
-            "贡献",
+            "Products",
+            "Orders",
+            "Tracking",
+            "Points",
+            "Balance",
+            "Security",
+            "Validation",
+            "Contributing",
         )
         for value in required:
             with self.subTest(value=value):
