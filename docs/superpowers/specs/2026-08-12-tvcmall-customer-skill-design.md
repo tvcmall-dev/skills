@@ -43,7 +43,7 @@ skills/
 
 `SKILL.md` 是触发条件、工作流和安全边界的唯一主入口。`agents/openai.yaml` 提供 UI 元数据、调用提示和名为 `tvcmall` 的 Streamable HTTP MCP 依赖声明。`scripts/` 只承担需要确定性行为的 Codex 配置检查与更新；`references/` 保存详细安装说明和 tool 路由表，按需加载，避免主 Skill 过长。
 
-根目录 `README.md` 是仓库的标准用户入口，至少包含：项目定位、可用 Skill 列表、支持的查询能力、安装或仓库级发现方式、首次 MCP 配置流程、`TVCMALL_API_KEY` 申请入口、使用示例、安全警告、验证命令和贡献说明。README 中只使用 Key 占位符，不包含真实凭据；临时 HTTP endpoint 必须标记为仅供测试，不能表述为生产默认值。
+根目录 `README.md` 是仓库的标准用户入口，至少包含：项目定位、可用 Skill 列表、支持的查询能力、安装或仓库级发现方式、首次 MCP 配置流程、`TVCMALL_API_KEY` 申请入口、使用示例、安全警告、验证命令和贡献说明。README 中只使用 Key 占位符，不包含真实凭据，并将 `https://mcpserver.tvc-mall.com` 作为 TVCMall MCP 的标准 HTTPS 地址。
 
 ## Skill 触发与职责
 
@@ -64,7 +64,7 @@ Skill 负责 MCP 准备检查、缺失参数追问、tool 选择、跨 tool 编�
 
 在执行 TVCMall 业务查询前，Skill 先检查当前会话是否存在标识为 `tvcmall` 的 MCP 连接和预期 tools。存在时调用 `tvcmall_auth_status`；不存在时进入安装流程。
 
-这里的“安装 MCP Server”是按 `https://github.com/tvcmall-dev/mcp` 的当前接入说明，将远程 Streamable HTTP endpoint 注册到 Codex 用户级配置中，不克隆、不构建、不启动服务端仓库。Skill 不假设 endpoint 永久不变；安装前应以该仓库当前 README 为权威来源，并让用户确认解析出的 URL。URL 必须以 `/mcp` 结尾。
+这里的“安装 MCP Server”是参考 `https://github.com/tvcmall-dev/mcp` 的接入方式，将远程 Streamable HTTP endpoint 注册到 Codex 用户级配置中，不克隆、不构建、不启动服务端仓库。首版固定使用用户指定的标准地址 `https://mcpserver.tvc-mall.com`，不得回退到旧的临时 HTTP 地址，也不得擅自追加 `/mcp` 或其他路径。
 
 ### 2. 处理 Key
 
@@ -83,7 +83,7 @@ Skill 通过对话询问用户是否已有 `TVCMALL_API_KEY`：
 
 ```toml
 [mcp_servers.tvcmall]
-url = "<从 TVCMall MCP 官方 README 确认的 URL>"
+url = "https://mcpserver.tvc-mall.com"
 http_headers = { "TVCMALL_API_KEY" = "<用户输入的完整 Key>" }
 ```
 
@@ -126,12 +126,13 @@ http_headers = { "TVCMALL_API_KEY" = "<用户输入的完整 Key>" }
 - 真实 Key 按用户明确选择明文保存在用户级 Codex 配置中；配置前必须提示该风险和文件位置。
 - 仓库文档、测试、fixtures 和示例只能使用显然无效的占位符或假 Key。
 - Skill、脚本、日志、错误、tool 输出和最终回答不得回显完整 Key。
-- 如果权威 README 当前只提供公网 HTTP endpoint，Skill 必须提示它仅适用于受控短期联调和可撤销测试 Key；生产 Key 只能配合管理员提供的 HTTPS MCP endpoint。
+- MCP endpoint 固定为 `https://mcpserver.tvc-mall.com`。不得使用旧的公网 HTTP 地址，也不得因连接失败自动降低到 HTTP。
 - 不恢复或推断 MCP/WebApi 已脱敏的 PII，不输出不必要的完整地址、电话或上游原始正文。
 
 ## 错误处理
 
 - MCP 未注册：解释将按官方 README 注册远程连接，取得确认后运行配置流程。
+- MCP endpoint 返回网络错误或 `5xx`：报告标准 HTTPS 服务当前不可用，保留配置并建议稍后重试；不得回退到旧 HTTP endpoint。
 - Key 缺失：提供申请页面并等待用户完成，不生成或猜测 Key。
 - Key 格式错误：拒绝写入，仅说明格式要求，不回显输入值。
 - 配置解析或写入失败：保留原文件和备份，报告非敏感错误与恢复路径。
@@ -149,6 +150,7 @@ http_headers = { "TVCMALL_API_KEY" = "<用户输入的完整 Key>" }
 - 确认 Skill 位于 `.agents/skills/query-tvcmall-customer-data`，并声明 `tvcmall` MCP 依赖。
 - 确认仓库没有真实 Key、真实客户数据或非占位 MCP 凭据。
 - 检查根目录 `README.md` 覆盖安装、首次配置、Key 申请、查询示例、安全边界、测试与贡献入口，且其中的命令和路径与实际仓库结构一致。
+- 检查所有安装示例精确使用 `https://mcpserver.tvc-mall.com`，且仓库不包含旧的临时 HTTP 地址。
 
 ### 配置脚本
 
@@ -162,6 +164,7 @@ http_headers = { "TVCMALL_API_KEY" = "<用户输入的完整 Key>" }
 
 - MCP 已连接且已配置时直接执行正确查询。
 - MCP 缺失时进入安装流程，不尝试克隆或运行服务端仓库。
+- MCP 安装配置精确写入 `https://mcpserver.tvc-mall.com`，不自动追加 `/mcp`。
 - 用户没有 Key 时只引导到申请页面并等待。
 - 商品多结果时先确认；唯一结果按需查详情。
 - 已下单运费使用物流 tool，不使用商品运费估算。
