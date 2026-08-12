@@ -10,11 +10,24 @@ A collection of reusable Codex Skills for TVCMall business scenarios. The curren
 
 ## Requirements
 
-- Codex CLI, IDE extension, or desktop app;
+- A mainstream agent tool that supports repository Skills and MCP, such as Codex CLI, Claude Code CLI, Gemini CLI, or GitHub Copilot CLI;
 - Python 3.11 or later;
 - A personal `TVCMALL_API_KEY`.
 
-## Installation and Discovery
+## Agent Tool Installation
+
+Install one supported agent tool before cloning this repository. Always prefer the linked official documentation when a package manager, operating system, or authentication method differs from the examples below.
+
+| Tool | Common Installation | Official Documentation |
+| --- | --- | --- |
+| Codex CLI | `curl -fsSL https://chatgpt.com/codex/install.sh | sh`; Windows: `powershell -ExecutionPolicy ByPass -c "irm https://chatgpt.com/codex/install.ps1 | iex"`; npm: `npm install -g @openai/codex` | [Codex CLI](https://learn.chatgpt.com/docs/codex/cli) |
+| Claude Code / Claude Code CLI | `curl -fsSL https://claude.ai/install.sh | bash`; Windows: `irm https://claude.ai/install.ps1 | iex`; WinGet: `winget install Anthropic.ClaudeCode`; npm: `npm install -g @anthropic-ai/claude-code` | [Claude Code setup](https://code.claude.com/docs/en/setup) |
+| Gemini CLI | `npm install -g @google/gemini-cli` | [Gemini CLI installation](https://geminicli.com/docs/get-started/installation/) |
+| GitHub Copilot CLI | `npm install -g @github/copilot`; Windows: `winget install GitHub.Copilot` | [Install GitHub Copilot CLI](https://docs.github.com/en/copilot/how-tos/copilot-cli/set-up-copilot-cli/install-copilot-cli) |
+| Cursor CLI | `curl https://cursor.com/install -fsS | bash`; Windows: `irm 'https://cursor.com/install?win32=true' | iex` | [Cursor CLI installation](https://cursor.com/docs/cli/installation) |
+| Qwen Code CLI | `curl -fsSL https://qwen-code-assets.oss-cn-hangzhou.aliyuncs.com/installation/install-qwen-standalone.sh | bash`; Windows: `irm https://qwen-code-assets.oss-cn-hangzhou.aliyuncs.com/installation/install-qwen-standalone.ps1 | iex` | [Qwen Code overview](https://qwenlm.github.io/qwen-code-docs/en/users/overview/) |
+
+## Skill Installation and Discovery
 
 ```powershell
 git clone https://github.com/tvcmall-dev/skills.git
@@ -22,7 +35,7 @@ cd skills
 codex
 ```
 
-When Codex starts from the repository directory, it discovers the repository-level Skill under `.agents/skills`. You do not need to clone, build, or run the TVCMall MCP Server locally; this Skill connects to the remote Streamable HTTP MCP.
+When an agent starts from the repository directory, it discovers the repository-level Skill under `.agents/skills`. You do not need to clone, build, or run the TVCMall MCP Server locally; this Skill connects to the remote Streamable HTTP MCP.
 
 ## First-Time Setup
 
