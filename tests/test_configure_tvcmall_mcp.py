@@ -33,6 +33,9 @@ class ValidationTests(unittest.TestCase):
     def test_toml_string_escapes_quotes_and_backslashes(self) -> None:
         self.assertEqual(configurer.toml_string('a"b\\c'), '"a\\"b\\\\c"')
 
+    def test_toml_string_escapes_forbidden_control_characters(self) -> None:
+        self.assertEqual(configurer.toml_string("a\x00\x7fb"), '"a\\u0000\\u007Fb"')
+
 
 class TransformTests(unittest.TestCase):
     def test_adds_tvcmall_to_empty_config(self) -> None:
@@ -110,6 +113,15 @@ class FileUpdateTests(unittest.TestCase):
             parsed = tomllib.loads(path.read_text(encoding="utf-8"))
             self.assertIn("other", parsed["mcp_servers"])
             self.assertIn("tvcmall", parsed["mcp_servers"])
+
+    def test_file_update_preserves_crlf_line_endings(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "config.toml"
+            path.write_bytes(b'model = "gpt-5"\r\n')
+            configurer.configure_file(path, "tmcp_v1_demo.secret")
+            updated = path.read_bytes()
+            self.assertIn(b"\r\n", updated)
+            self.assertNotIn(b"\n", updated.replace(b"\r\n", b""))
 
     def test_invalid_toml_does_not_change_file(self) -> None:
         with tempfile.TemporaryDirectory() as directory:

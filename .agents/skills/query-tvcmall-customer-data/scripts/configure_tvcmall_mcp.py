@@ -32,9 +32,19 @@ def validate_api_key(value: str) -> str:
 
 
 def toml_string(value: str) -> str:
-    escaped = value.replace("\\", "\\\\").replace('"', '\\"')
-    escaped = escaped.replace("\b", "\\b").replace("\t", "\\t")
-    escaped = escaped.replace("\n", "\\n").replace("\f", "\\f").replace("\r", "\\r")
+    escapes = {
+        "\b": "\\b",
+        "\t": "\\t",
+        "\n": "\\n",
+        "\f": "\\f",
+        "\r": "\\r",
+        '"': '\\"',
+        "\\": "\\\\",
+    }
+    escaped = "".join(
+        escapes.get(character, f"\\u{ord(character):04X}" if ord(character) < 0x20 or ord(character) == 0x7F else character)
+        for character in value
+    )
     return f'"{escaped}"'
 
 
@@ -92,7 +102,11 @@ def upsert_tvcmall_config(source: str, api_key: str) -> str:
 
 
 def configure_file(config_path: Path, api_key: str) -> ConfigureResult:
-    source = config_path.read_text(encoding="utf-8") if config_path.exists() else ""
+    if config_path.exists():
+        with config_path.open("r", encoding="utf-8", newline="") as stream:
+            source = stream.read()
+    else:
+        source = ""
     updated = upsert_tvcmall_config(source, api_key)
     if updated == source:
         return ConfigureResult(config_path, None, False)
