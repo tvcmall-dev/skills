@@ -51,7 +51,7 @@ class SkillContractTests(unittest.TestCase):
         frontmatter = text.split("---", 2)[1]
         keys = re.findall(r"^([a-z_]+):", frontmatter, re.MULTILINE)
         self.assertEqual(keys, ["name", "description"])
-        self.assertIn("配置 TVCMALL_API_KEY", frontmatter)
+        self.assertIn("configure TVCMALL_API_KEY", frontmatter)
 
     def test_openai_yaml_declares_exact_tvcmall_dependency(self) -> None:
         text = (SKILL / "agents/openai.yaml").read_text(encoding="utf-8")
@@ -74,17 +74,17 @@ class SkillContractTests(unittest.TestCase):
     def test_references_close_key_and_query_routing_gaps(self) -> None:
         setup = (SKILL / "references/mcp-setup.md").read_text(encoding="utf-8")
         routing = (SKILL / "references/tool-routing.md").read_text(encoding="utf-8")
-        for value in ("立即撤销", "申请新 Key", "不要重复该 Key"):
+        for value in ("revoke it immediately", "request a new Key", "do not repeat it"):
             with self.subTest(value=value):
                 self.assertIn(value, setup)
-        self.assertIn("不要让其他进程编辑", setup)
+        self.assertIn("Do not let another process edit", setup)
         for value in (
             "page=1",
             "page_size=20",
             "page_size=10",
-            "不要声称结果严格按时间排序",
-            "如果缺少 `order_id`",
-            "省略时使用 `all`",
+            "do not claim that results are strictly sorted by time",
+            "If `order_id` is missing",
+            "When `direction` is omitted, use `all`",
         ):
             with self.subTest(value=value):
                 self.assertIn(value, routing)
@@ -129,7 +129,7 @@ class SkillContractTests(unittest.TestCase):
         self.assertIn("`end_date`", text)
         self.assertIn("`BeginDate`", text)
         self.assertIn("`EndDate`", text)
-        removed_implementation_note = "当前 MCP Server " + "未" + "转发"
+        removed_implementation_note = "\u5f53\u524d MCP Server \u672a\u8f6c\u53d1"
         self.assertNotIn(removed_implementation_note, text)
         self.assertIn("`pointstype=0`", text)
         self.assertIn("`pointstype=1`", text)
@@ -141,10 +141,11 @@ class SkillContractTests(unittest.TestCase):
             with self.subTest(tool=tool):
                 self.assertIn(f"`{tool}`", text)
 
-    def test_scoped_documentation_is_chinese(self) -> None:
+    def test_scoped_documentation_is_english_except_agents_md(self) -> None:
         paths = (
             ROOT / "README.md",
             SKILL / "SKILL.md",
+            SKILL / "agents/openai.yaml",
             SKILL / "references/mcp-setup.md",
             SKILL / "references/tool-routing.md",
             SKILL / "references/tool-reference.md",
@@ -152,7 +153,7 @@ class SkillContractTests(unittest.TestCase):
         for path in paths:
             with self.subTest(path=path):
                 text = path.read_text(encoding="utf-8")
-                self.assertIsNotNone(re.search(r"[\u3400-\u9fff]", text))
+                self.assertIsNone(re.search(r"[\u3400-\u9fff]", text))
 
     def test_no_old_endpoint_or_plausible_real_pat(self) -> None:
         tracked = subprocess.run(
@@ -191,14 +192,14 @@ class SkillContractTests(unittest.TestCase):
             ENDPOINT,
             "https://www.tvcmall.com/user/agentkeys",
             "TVCMALL_API_KEY",
-            "商品",
-            "订单",
-            "物流",
-            "积分",
-            "余额",
-            "安全",
-            "验证",
-            "贡献",
+            "Products",
+            "Orders",
+            "Tracking",
+            "Points",
+            "Balance",
+            "Security",
+            "Validation",
+            "Contributing",
         )
         for value in required:
             with self.subTest(value=value):

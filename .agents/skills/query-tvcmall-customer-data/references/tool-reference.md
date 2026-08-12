@@ -1,95 +1,95 @@
-# TVCMall 工具与参数参考
+# TVCMall Tool and Parameter Reference
 
-本清单以当前 MCP Server 的 Zod input schema 和 HTTP client 为对外契约，并用 TVCMall WebApi 项目中的 Controller、action 和 DTO 核对参数映射。只向用户收集“对外参数”；固定参数和请求上下文由 MCP/WebApi 补全，不要要求用户提供。
+This list uses the current MCP Server Zod input schemas and HTTP client as the external contract, and validates parameter mappings against the TVCMall WebApi project's controllers, actions, and DTOs. Collect only external parameters from the user; fixed parameters and request context are filled by the MCP or WebApi.
 
-## 参数通则
+## Parameter Rules
 
-- `page` 从 1 开始，默认 1。
-- `page_size` 默认 20，范围 1 至 50。
-- 表中“固定或上下文参数”不是 MCP 对外参数。
-- WebApi 会根据认证用户、语言、货币、国家和设备补全内部上下文；不要在对话中伪造这些值。
+- `page` starts at 1 and defaults to 1.
+- `page_size` defaults to 20 and accepts values from 1 to 50.
+- Values listed as fixed or context parameters are not MCP external parameters.
+- WebApi fills internal context such as authenticated user, language, currency, country, and device. Do not invent these values in conversation.
 
-## 认证
+## Auth
 
 ### `tvcmall_auth_status`
 
-- 对外参数：无。
-- 行为：只检查当前 MCP 会话是否加载 `TVCMALL_API_KEY`，不验证 Key 有效性，不调用 WebApi。
+- External parameters: none.
+- Behavior: checks only whether the current MCP session loaded `TVCMALL_API_KEY`; it does not validate Key authorization and does not call WebApi.
 
-## 商品与运费
+## Products and Shipping
 
 ### `tvcmall_search_products`
 
-- 对外参数：`query` 为必填非空字符串；`page` 默认 1；`page_size` 默认 20、最大 50。
-- WebApi：GET `/v3/product/list/search/mapping`。
-- 参数映射：`query` -> body.`keywords`，`page` -> body.`pageindex`，`page_size` -> body.`pagesize`。
-- 固定参数：body.`sort=default`、`attributes=[]`、`catalogCodes=[]`、`purchaseTag=0`、`url=/search`、`noAttr=true`、`fromAlgolia=true`。
-- WebApi 依据：`ProductListController.SearchMapping` 和 `ProductListFilterConditionInputDto`。
+- External parameters: `query` is a required non-empty string; `page` defaults to 1; `page_size` defaults to 20 and has a maximum of 50.
+- WebApi: GET `/v3/product/list/search/mapping`.
+- Mapping: `query` -> body.`keywords`, `page` -> body.`pageindex`, `page_size` -> body.`pagesize`.
+- Fixed parameters: body.`sort=default`, `attributes=[]`, `catalogCodes=[]`, `purchaseTag=0`, `url=/search`, `noAttr=true`, `fromAlgolia=true`.
+- WebApi evidence: `ProductListController.SearchMapping` and `ProductListFilterConditionInputDto`.
 
 ### `tvcmall_get_product_detail`
 
-- 对外参数：`product_id` 必填，格式必须是搜索结果返回的 `/details/...` 路径；不能传 SKU、关键词或内部商品 ID。
-- WebApi：GET `/v3/productdetail/detail`。
-- 参数映射：`product_id` -> body.`url`。
-- WebApi 依据：`V3ProductController.Detail` 和 `ProductDetailInputDto.url`；`priceStep` 由 WebApi 根据用户上下文设置。
+- External parameters: `product_id` is required and must be the `/details/...` path returned by search results; do not pass a SKU, keyword, or internal product ID.
+- WebApi: GET `/v3/productdetail/detail`.
+- Mapping: `product_id` -> body.`url`.
+- WebApi evidence: `V3ProductController.Detail` and `ProductDetailInputDto.url`; `priceStep` is set by WebApi from user context.
 
 ### `tvcmall_estimate_shipping`
 
-- 对外参数：`sku` 为必填非空字符串；`quantity` 为 1 至 1000 的整数；`countrycode` 为两位国家代码并转为大写。
-- WebApi：GET `/v3/productdetail/shipping/compute`。
-- 参数映射：`sku` -> body.`sku`，`quantity` -> body.`quantity`，`countrycode` -> body.`countryCode`。
-- WebApi 依据：`V3ProductController.ComputeShippingCosts` 和 `ComputeShippingCostsInputDto`。
+- External parameters: `sku` is a required non-empty string; `quantity` is an integer from 1 to 1000; `countrycode` is a two-letter country code and is normalized to uppercase.
+- WebApi: GET `/v3/productdetail/shipping/compute`.
+- Mapping: `sku` -> body.`sku`, `quantity` -> body.`quantity`, `countrycode` -> body.`countryCode`.
+- WebApi evidence: `V3ProductController.ComputeShippingCosts` and `ComputeShippingCostsInputDto`.
 
-## 订单与物流
+## Orders and Tracking
 
 ### `tvcmall_list_orders`
 
-- 对外参数：`start_date`、`end_date` 可选；`status` 默认 `V3All`；`page` 默认 1；`page_size` 默认 20、最大 50。
-- 状态值：`V3All`、`V3Unpaid`、`V3AwaitingConfirmation`、`V3Preparing`、`V3Shipped`、`V3Done`。
-- WebApi：POST `/v3/user/getorders`。
-- 参数映射：`start_date` -> body.`BeginDate`，`end_date` -> body.`EndDate`，`status` -> body.`status`，`page` -> body.`pageindex`，`page_size` -> body.`pagesize`。
-- 固定参数：body.`keywords=""`、body.`WithDetail=true`。
-- WebApi 依据：`V3UserController.GetOrders` 和 `GetOrdersDto`。
+- External parameters: optional `start_date` and `end_date`; `status` defaults to `V3All`; `page` defaults to 1; `page_size` defaults to 20 and has a maximum of 50.
+- Status values: `V3All`, `V3Unpaid`, `V3AwaitingConfirmation`, `V3Preparing`, `V3Shipped`, `V3Done`.
+- WebApi: POST `/v3/user/getorders`.
+- Mapping: `start_date` -> body.`BeginDate`, `end_date` -> body.`EndDate`, `status` -> body.`status`, `page` -> body.`pageindex`, `page_size` -> body.`pagesize`.
+- Fixed parameters: body.`keywords=""`, body.`WithDetail=true`.
+- WebApi evidence: `V3UserController.GetOrders` and `GetOrdersDto`.
 
 ### `tvcmall_get_order_detail`
 
-- 对外参数：`order_id` 为必填非空字符串。
-- WebApi：POST `/v3/order/detail`。
-- 参数映射：`order_id` -> query.`orderId`。
-- 默认参数：Controller 使用 `active=true`、`keyWords=null`、`pageIndex=1`、`pageSize=10`。
-- WebApi 依据：`V3OrderController.OrderDetail`；Controller 在返回前校验订单归属。
+- External parameters: `order_id` is a required non-empty string.
+- WebApi: POST `/v3/order/detail`.
+- Mapping: `order_id` -> query.`orderId`.
+- Default parameters: the controller uses `active=true`, `keyWords=null`, `pageIndex=1`, `pageSize=10`.
+- WebApi evidence: `V3OrderController.OrderDetail`; the controller verifies order ownership before returning data.
 
 ### `tvcmall_get_tracking_info`
 
-- 对外参数：`order_id` 为必填非空字符串。
-- WebApi：GET `/order/getlogisticstracking`。
-- 参数映射：`order_id` -> query.`orderId`。
-- WebApi 依据：`OrderController.GetLogisticsTracking`；MCP PAT 场景会先校验订单归属。
+- External parameters: `order_id` is a required non-empty string.
+- WebApi: GET `/order/getlogisticstracking`.
+- Mapping: `order_id` -> query.`orderId`.
+- WebApi evidence: `OrderController.GetLogisticsTracking`; the MCP PAT path verifies order ownership before returning data.
 
 ### `tvcmall_batch_get_tracking`
 
-- 对外参数：`order_ids` 为 1 至 50 个非空订单号组成的数组。
-- WebApi：没有独立批量 route；MCP 对每个订单调用 `/order/getlogisticstracking` 并合并结果。
-- 参数映射：数组中的每个值依次映射为 query.`orderId`。
+- External parameters: `order_ids` is an array of 1 to 50 non-empty order numbers.
+- WebApi: no dedicated batch route; the MCP calls `/order/getlogisticstracking` for each order and merges the results.
+- Mapping: each array value maps to query.`orderId` in sequence.
 
-## 积分与余额
+## Points and Balance
 
 ### `tvcmall_get_points`
 
-- 对外参数：无。
-- WebApi：GET `/v3/user/points/stat`。
-- 固定参数：不传 `type`，使用 `V3UserController.GetUserAccountInfo` 的默认值 `type=points`。
+- External parameters: none.
+- WebApi: GET `/v3/user/points/stat`.
+- Fixed parameters: no `type` is passed; this uses the `V3UserController.GetUserAccountInfo` default `type=points`.
 
 ### `tvcmall_list_point_records`
 
-- 对外参数：`direction` 可取 `all`、`got`、`used`，默认 `all`；`page` 默认 1；`page_size` 默认 20、最大 50。
-- WebApi：GET `/v3/user/points/list`。
-- 参数映射：`page` -> query.`pageindex`，`page_size` -> query.`pagesize`；`all` -> `pointstype=0`，`got` -> `pointstype=1`，`used` -> `pointstype=2`。
-- WebApi 依据：`V3UserController.GetAccumulatePointsList`；`pointstype` 中 1 表示获得、2 表示消费，默认 0 表示全部。
+- External parameters: `direction` accepts `all`, `got`, or `used` and defaults to `all`; `page` defaults to 1; `page_size` defaults to 20 and has a maximum of 50.
+- WebApi: GET `/v3/user/points/list`.
+- Mapping: `page` -> query.`pageindex`, `page_size` -> query.`pagesize`; `all` -> `pointstype=0`, `got` -> `pointstype=1`, `used` -> `pointstype=2`.
+- WebApi evidence: `V3UserController.GetAccumulatePointsList`; `pointstype` value 1 means gained, 2 means spent, and the default 0 means all.
 
 ### `tvcmall_list_balance_records`
 
-- 对外参数：`direction` 可取 `all`、`income`、`expense`，默认 `all`；`page` 默认 1；`page_size` 默认 20、最大 50。
-- WebApi：GET `/v3/user/balance/list`。
-- 参数映射：`page` -> query.`pageindex`，`page_size` -> query.`pagesize`；`all` -> `pointstype=0`，`income` -> `pointstype=1`，`expense` -> `pointstype=2`。
-- WebApi 依据：`V3UserController.GetBalanceList`；语言和币种由 WebApi 请求上下文补全。
+- External parameters: `direction` accepts `all`, `income`, or `expense` and defaults to `all`; `page` defaults to 1; `page_size` defaults to 20 and has a maximum of 50.
+- WebApi: GET `/v3/user/balance/list`.
+- Mapping: `page` -> query.`pageindex`, `page_size` -> query.`pagesize`; `all` -> `pointstype=0`, `income` -> `pointstype=1`, `expense` -> `pointstype=2`.
+- WebApi evidence: `V3UserController.GetBalanceList`; language and currency are filled by WebApi request context.
