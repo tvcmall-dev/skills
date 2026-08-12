@@ -2,3 +2,11 @@ interface:
   display_name: "TVCMall Customer Query"
   short_description: "Query TVCMall products, orders, shipping, points, and balance"
   default_prompt: "Use $query-tvcmall-customer-data to check my recent TVCMall orders and tracking status."
+
+dependencies:
+  tools:
+    - type: "mcp"
+      value: "tvcmall"
+      description: "TVCMall Customer MCP for authenticated read-only customer queries"
+      transport: "streamable_http"
+      url: "https://mcpserver.tvc-mall.com"
