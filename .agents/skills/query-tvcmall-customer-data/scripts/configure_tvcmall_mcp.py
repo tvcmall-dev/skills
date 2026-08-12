@@ -14,8 +14,7 @@ import sys
 
 
 MCP_URL = "https://mcpserver.tvc-mall.com"
-API_KEY_PATTERN = re.compile(r"^tmcp_v1_[^\s.]+\.[^\s.]+$")
-TABLE_HEADER_PATTERN = re.compile(r"(?m)^\s*\[([^\]\r\n]+)\]\s*(?:#.*)?$")
+API_KEY_PATTERN = re.compile(r"^tmcp_v1_[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+$")
 
 
 @dataclass(frozen=True)
@@ -48,35 +47,62 @@ def toml_string(value: str) -> str:
     return f'"{escaped}"'
 
 
-def _is_tvcmall_table(name: str) -> bool:
-    marker = "__tvcmall_config_marker__"
-    try:
-        parsed = tomllib.loads(f"[{name}]\n{marker} = true\n")
-    except tomllib.TOMLDecodeError:
-        return False
-
-    def marker_path(value: object, path: tuple[str, ...] = ()) -> tuple[str, ...] | None:
-        if not isinstance(value, dict):
-            return None
+def _marker_path(value: object, marker: str, path: tuple[str, ...] = ()) -> tuple[str, ...] | None:
+    if isinstance(value, dict):
         if value.get(marker) is True:
             return path
         for key, child in value.items():
-            found = marker_path(child, (*path, key))
+            found = _marker_path(child, marker, (*path, key))
             if found is not None:
                 return found
-        return None
+    elif isinstance(value, list):
+        for child in value:
+            found = _marker_path(child, marker, path)
+            if found is not None:
+                return found
+    return None
 
-    path = marker_path(parsed)
-    return path is not None and path[:2] == ("mcp_servers", "tvcmall")
+
+def _table_headers(source: str) -> list[tuple[int, tuple[str, ...]]]:
+    marker = "__tvcmall_config_table_marker__"
+    while marker in source:
+        marker += "_"
+    newline = "\r\n" if "\r\n" in source else "\n"
+    headers: list[tuple[int, tuple[str, ...]]] = []
+    offset = 0
+
+    for line in source.splitlines(keepends=True):
+        body = line.rstrip("\r\n")
+        if body.lstrip(" \t").startswith("["):
+            assignment = f"{marker} = true"
+            try:
+                isolated = tomllib.loads(f"{body}\n{assignment}\n")
+                isolated_path = _marker_path(isolated, marker)
+            except tomllib.TOMLDecodeError:
+                isolated_path = None
+
+            if isolated_path is not None:
+                body_end = offset + len(body)
+                injected = f"{source[:body_end]}{newline}{assignment}{source[body_end:]}"
+                try:
+                    contextual = tomllib.loads(injected)
+                    contextual_path = _marker_path(contextual, marker)
+                except tomllib.TOMLDecodeError:
+                    contextual_path = None
+                if contextual_path == isolated_path:
+                    headers.append((offset, isolated_path))
+        offset += len(line)
+
+    return headers
 
 
 def _remove_tvcmall_tables(source: str) -> str:
-    matches = list(TABLE_HEADER_PATTERN.finditer(source))
+    headers = _table_headers(source)
     ranges: list[tuple[int, int]] = []
-    for index, match in enumerate(matches):
-        if _is_tvcmall_table(match.group(1)):
-            end = matches[index + 1].start() if index + 1 < len(matches) else len(source)
-            ranges.append((match.start(), end))
+    for index, (start, path) in enumerate(headers):
+        if path[:2] == ("mcp_servers", "tvcmall"):
+            end = headers[index + 1][0] if index + 1 < len(headers) else len(source)
+            ranges.append((start, end))
     for start, end in reversed(ranges):
         source = source[:start] + source[end:]
     return source.rstrip()
@@ -102,11 +128,8 @@ def upsert_tvcmall_config(source: str, api_key: str) -> str:
 
 
 def configure_file(config_path: Path, api_key: str) -> ConfigureResult:
-    if config_path.exists():
-        with config_path.open("r", encoding="utf-8", newline="") as stream:
-            source = stream.read()
-    else:
-        source = ""
+    existed = config_path.exists()
+    source = _read_config_text(config_path) if existed else ""
     updated = upsert_tvcmall_config(source, api_key)
     if updated == source:
         return ConfigureResult(config_path, None, False)
@@ -117,19 +140,34 @@ def configure_file(config_path: Path, api_key: str) -> ConfigureResult:
         backup_path = config_path.with_name(f"{config_path.name}.bak")
         shutil.copy2(config_path, backup_path)
 
-    descriptor, temporary_name = tempfile.mkstemp(
-        prefix=f".{config_path.name}.", suffix=".tmp", dir=config_path.parent
-    )
+    try:
+        descriptor, temporary_name = tempfile.mkstemp(
+            prefix=f".{config_path.name}.", suffix=".tmp", dir=config_path.parent
+        )
+    except OSError as exc:
+        exc.backup_path = backup_path
+        raise
     temporary_path = Path(temporary_name)
     try:
-        with os.fdopen(descriptor, "w", encoding="utf-8", newline="") as stream:
-            stream.write(updated)
-            stream.flush()
-            os.fsync(stream.fileno())
-        os.replace(temporary_path, config_path)
+        try:
+            with os.fdopen(descriptor, "w", encoding="utf-8", newline="") as stream:
+                stream.write(updated)
+                stream.flush()
+                os.fsync(stream.fileno())
+            if config_path.exists() != existed or (existed and _read_config_text(config_path) != source):
+                raise RuntimeError("Codex config changed during update; no changes were applied")
+            os.replace(temporary_path, config_path)
+        except OSError as exc:
+            exc.backup_path = backup_path
+            raise
     finally:
         temporary_path.unlink(missing_ok=True)
     return ConfigureResult(config_path, backup_path, True)
+
+
+def _read_config_text(config_path: Path) -> str:
+    with config_path.open("r", encoding="utf-8", newline="") as stream:
+        return stream.read()
 
 
 def resolve_config_path(explicit: Path | None = None) -> Path:
@@ -161,8 +199,11 @@ def main(argv: Sequence[str] | None = None) -> int:
     try:
         api_key = validate_api_key(getpass.getpass("TVCMALL_API_KEY: "))
         result = configure_file(config_path, api_key)
-    except (OSError, ValueError) as exc:
+    except (OSError, RuntimeError, ValueError) as exc:
         print(f"Configuration failed: {exc}", file=sys.stderr)
+        backup_path = getattr(exc, "backup_path", None)
+        if backup_path:
+            print(f"Backup available: {backup_path}", file=sys.stderr)
         return 2
 
     state = "updated" if result.changed else "already current"

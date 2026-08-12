@@ -30,6 +30,11 @@ class ValidationTests(unittest.TestCase):
             with self.subTest(value=value), self.assertRaises(ValueError):
                 configurer.validate_api_key(value)
 
+    def test_rejects_non_ascii_and_control_characters(self) -> None:
+        for value in ("tmcp_v1_demo.secrét", "tmcp_v1_demo.sec\x00ret"):
+            with self.subTest(value=value), self.assertRaises(ValueError):
+                configurer.validate_api_key(value)
+
     def test_toml_string_escapes_quotes_and_backslashes(self) -> None:
         self.assertEqual(configurer.toml_string('a"b\\c'), '"a\\"b\\\\c"')
 
@@ -75,6 +80,34 @@ OLD = "value"
         self.assertEqual(parsed["mcp_servers"]["tvcmall"]["url"], configurer.MCP_URL)
         self.assertNotIn("OLD", parsed["mcp_servers"]["tvcmall"]["http_headers"])
         self.assertEqual(updated.count("[mcp_servers.tvcmall]"), 1)
+
+    def test_ignores_table_like_text_inside_multiline_strings(self) -> None:
+        source = '''message = """
+[mcp_servers.tvcmall]
+This is documentation, not a TOML table.
+"""
+
+[mcp_servers.other]
+url = "https://example.com/mcp"
+'''
+        updated = configurer.upsert_tvcmall_config(source, "tmcp_v1_demo.secret")
+        parsed = tomllib.loads(updated)
+        self.assertIn("[mcp_servers.tvcmall]", parsed["message"])
+        self.assertEqual(parsed["mcp_servers"]["other"]["url"], "https://example.com/mcp")
+
+    def test_preserves_array_table_after_tvcmall_section(self) -> None:
+        source = '''[mcp_servers.tvcmall]
+url = "https://old.invalid"
+
+[[profiles]]
+name = "first"
+
+[[profiles]]
+name = "second"
+'''
+        updated = configurer.upsert_tvcmall_config(source, "tmcp_v1_demo.secret")
+        parsed = tomllib.loads(updated)
+        self.assertEqual(parsed["profiles"], [{"name": "first"}, {"name": "second"}])
 
     def test_rejects_invalid_existing_toml(self) -> None:
         with self.assertRaisesRegex(ValueError, "valid TOML"):
@@ -151,6 +184,19 @@ class FileUpdateTests(unittest.TestCase):
                     configurer.configure_file(path, "tmcp_v1_demo.secret")
             self.assertEqual(path.read_text(encoding="utf-8"), original)
 
+    def test_concurrent_change_is_not_overwritten(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "config.toml"
+            path.write_text('model = "original"\n', encoding="utf-8")
+
+            def replace_source_during_write(_descriptor: int) -> None:
+                path.write_text('model = "external"\n', encoding="utf-8")
+
+            with mock.patch.object(configurer.os, "fsync", side_effect=replace_source_during_write):
+                with self.assertRaisesRegex(RuntimeError, "changed during update"):
+                    configurer.configure_file(path, "tmcp_v1_demo.secret")
+            self.assertEqual(path.read_text(encoding="utf-8"), 'model = "external"\n')
+
     def test_read_only_destination_failure_keeps_original(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
             path = Path(directory) / "config.toml"
@@ -168,7 +214,7 @@ class CliTests(unittest.TestCase):
             self.assertEqual(configurer.resolve_config_path(), Path("C:/tmp/codex-home/config.toml"))
 
     def test_main_reads_key_with_getpass_and_does_not_print_it(self) -> None:
-        secret = "tmcp_v1_private.secret"
+        secret = "tmcp_v1_fake.secret"
         with tempfile.TemporaryDirectory() as directory:
             path = Path(directory) / "config.toml"
             stdout = io.StringIO()
@@ -190,3 +236,33 @@ class CliTests(unittest.TestCase):
             self.assertEqual(code, 2)
             self.assertFalse(path.exists())
             self.assertNotIn("invalid", stderr.getvalue())
+
+    def test_main_reports_backup_path_when_replace_fails(self) -> None:
+        secret = "tmcp_v1_fake.secret"
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "config.toml"
+            path.write_text('model = "gpt-5"\n', encoding="utf-8")
+            stdout = io.StringIO()
+            stderr = io.StringIO()
+            with mock.patch.object(configurer.getpass, "getpass", return_value=secret):
+                with mock.patch.object(configurer.os, "replace", side_effect=OSError("blocked")):
+                    with contextlib.redirect_stdout(stdout), contextlib.redirect_stderr(stderr):
+                        code = configurer.main(["--config", str(path), "--yes"])
+            output = stdout.getvalue() + stderr.getvalue()
+            self.assertEqual(code, 2)
+            self.assertIn(str(path.with_name("config.toml.bak")), output)
+            self.assertNotIn(secret, output)
+
+    def test_main_reports_backup_path_when_temp_creation_fails(self) -> None:
+        secret = "tmcp_v1_fake.secret"
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "config.toml"
+            path.write_text('model = "gpt-5"\n', encoding="utf-8")
+            stderr = io.StringIO()
+            with mock.patch.object(configurer.getpass, "getpass", return_value=secret):
+                with mock.patch.object(configurer.tempfile, "mkstemp", side_effect=PermissionError("read only")):
+                    with contextlib.redirect_stderr(stderr):
+                        code = configurer.main(["--config", str(path), "--yes"])
+            self.assertEqual(code, 2)
+            self.assertIn(str(path.with_name("config.toml.bak")), stderr.getvalue())
+            self.assertNotIn(secret, stderr.getvalue())

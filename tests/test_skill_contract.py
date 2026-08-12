@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from pathlib import Path
 import re
+import subprocess
 import unittest
 
 
@@ -41,6 +42,7 @@ class SkillContractTests(unittest.TestCase):
         for value in ("立即撤销", "申请新 Key", "不要复述"):
             with self.subTest(value=value):
                 self.assertIn(value, setup)
+        self.assertIn("不要让其他进程同时编辑", setup)
         for value in (
             "page=1",
             "page_size=20",
@@ -53,14 +55,26 @@ class SkillContractTests(unittest.TestCase):
                 self.assertIn(value, routing)
 
     def test_no_old_endpoint_or_plausible_real_pat(self) -> None:
-        deliverables = [ROOT / "README.md", ROOT / "AGENTS.md", *SKILL.rglob("*")]
+        tracked = subprocess.run(
+            ["git", "ls-files", "-z"],
+            cwd=ROOT,
+            check=True,
+            capture_output=True,
+        ).stdout.decode("utf-8").split("\0")
+        deliverables = [ROOT / relative for relative in tracked if relative]
+        delivery_files = [ROOT / "README.md", ROOT / "AGENTS.md", *SKILL.rglob("*")]
         repository_text = "\n".join(
             path.read_text(encoding="utf-8", errors="ignore")
             for path in deliverables
             if path.is_file() and "__pycache__" not in path.parts
         )
+        delivery_text = "\n".join(
+            path.read_text(encoding="utf-8", errors="ignore")
+            for path in delivery_files
+            if path.is_file() and "__pycache__" not in path.parts
+        )
         forbidden_host = ".".join(("115", "175", "225", "101"))
-        self.assertNotIn(forbidden_host, repository_text)
+        self.assertNotIn(forbidden_host, delivery_text)
         leaked = re.findall(
             r"tmcp_v1_(?!demo|fake|example)[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+",
             repository_text,

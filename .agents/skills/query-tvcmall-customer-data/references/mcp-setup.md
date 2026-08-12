@@ -31,7 +31,7 @@ url = "https://mcpserver.tvc-mall.com"
 http_headers = { "TVCMALL_API_KEY" = "<TVCMALL_PAT>" }
 ```
 
-不要把 Key 作为命令行参数。不要给 endpoint 追加 `/mcp`。脚本会保留其他 Codex 设置和 MCP Server，拒绝覆盖无效 TOML，并在替换现有有效配置前创建备份。
+不要把 Key 作为命令行参数。不要给 endpoint 追加 `/mcp`。脚本会保留其他 Codex 设置和 MCP Server，拒绝覆盖无效 TOML，并在替换现有有效配置前创建备份。运行脚本期间不要让其他进程同时编辑同一个 `config.toml`；脚本会在替换前检测已发生的变更并安全失败，但文件替换本身不提供跨进程锁。
 
 ## 重启与验证
 
