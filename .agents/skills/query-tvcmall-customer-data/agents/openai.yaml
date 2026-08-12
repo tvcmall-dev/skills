@@ -1,12 +1,12 @@
 interface:
-  display_name: "TVCMall Customer Query"
-  short_description: "Query TVCMall products, orders, shipping, points, and balance"
-  default_prompt: "Use $query-tvcmall-customer-data to check my recent TVCMall orders and tracking status."
+  display_name: "TVCMall 客户查询"
+  short_description: "查询 TVCMall 商品、订单、物流、积分和余额"
+  default_prompt: "使用 $query-tvcmall-customer-data 查询我的 TVCMall 订单和物流状态。"
 
 dependencies:
   tools:
     - type: "mcp"
       value: "tvcmall"
-      description: "TVCMall Customer MCP for authenticated read-only customer queries"
+      description: "用于认证后只读客户查询的 TVCMall Customer MCP"
       transport: "streamable_http"
-      url: "https://mcpserver.tvc-mall.com"
+      url: "https://openapi.tvc-mall.com/mcp"

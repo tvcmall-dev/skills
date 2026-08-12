@@ -8,7 +8,21 @@ import unittest
 
 ROOT = Path(__file__).resolve().parents[1]
 SKILL = ROOT / ".agents/skills/query-tvcmall-customer-data"
-ENDPOINT = "https://mcpserver.tvc-mall.com"
+ENDPOINT = "https://openapi.tvc-mall.com/mcp"
+OLD_ENDPOINT = "https://mcpserver.tvc-mall.com"
+TOOLS = (
+    "tvcmall_auth_status",
+    "tvcmall_search_products",
+    "tvcmall_get_product_detail",
+    "tvcmall_estimate_shipping",
+    "tvcmall_list_orders",
+    "tvcmall_get_order_detail",
+    "tvcmall_get_tracking_info",
+    "tvcmall_batch_get_tracking",
+    "tvcmall_get_points",
+    "tvcmall_list_point_records",
+    "tvcmall_list_balance_records",
+)
 
 
 class SkillContractTests(unittest.TestCase):
@@ -37,7 +51,7 @@ class SkillContractTests(unittest.TestCase):
         frontmatter = text.split("---", 2)[1]
         keys = re.findall(r"^([a-z_]+):", frontmatter, re.MULTILINE)
         self.assertEqual(keys, ["name", "description"])
-        self.assertIn("configure TVCMALL_API_KEY", frontmatter)
+        self.assertIn("配置 TVCMALL_API_KEY", frontmatter)
 
     def test_openai_yaml_declares_exact_tvcmall_dependency(self) -> None:
         text = (SKILL / "agents/openai.yaml").read_text(encoding="utf-8")
@@ -51,6 +65,7 @@ class SkillContractTests(unittest.TestCase):
         for relative in (
             "references/mcp-setup.md",
             "references/tool-routing.md",
+            "references/tool-reference.md",
             "scripts/configure_tvcmall_mcp.py",
         ):
             self.assertIn(relative, text)
@@ -59,32 +74,85 @@ class SkillContractTests(unittest.TestCase):
     def test_references_close_key_and_query_routing_gaps(self) -> None:
         setup = (SKILL / "references/mcp-setup.md").read_text(encoding="utf-8")
         routing = (SKILL / "references/tool-routing.md").read_text(encoding="utf-8")
-        for value in ("revoke it immediately", "request a new Key", "do not repeat it"):
+        for value in ("立即撤销", "申请新 Key", "不要重复该 Key"):
             with self.subTest(value=value):
                 self.assertIn(value, setup)
-        self.assertIn("Do not let another process edit", setup)
+        self.assertIn("不要让其他进程编辑", setup)
         for value in (
             "page=1",
             "page_size=20",
             "page_size=10",
-            "do not claim that results are strictly sorted by time",
-            "If `order_id` is missing",
-            "When `direction` is omitted, use `all`",
+            "不要声称结果严格按时间排序",
+            "如果缺少 `order_id`",
+            "省略时使用 `all`",
         ):
             with self.subTest(value=value):
                 self.assertIn(value, routing)
 
-    def test_scoped_documentation_is_english(self) -> None:
+    def test_tool_reference_covers_every_tool_and_webapi_mapping(self) -> None:
+        text = (SKILL / "references/tool-reference.md").read_text(encoding="utf-8")
+        for tool in TOOLS:
+            with self.subTest(tool=tool):
+                self.assertIn(f"`{tool}`", text)
+
+        for route in (
+            "/v3/product/list/search/mapping",
+            "/v3/productdetail/detail",
+            "/v3/productdetail/shipping/compute",
+            "/v3/user/getorders",
+            "/v3/order/detail",
+            "/order/getlogisticstracking",
+            "/v3/user/points/stat",
+            "/v3/user/points/list",
+            "/v3/user/balance/list",
+        ):
+            with self.subTest(route=route):
+                self.assertIn(f"`{route}`", text)
+
+        for parameter in (
+            "`query`",
+            "`product_id`",
+            "`sku`",
+            "`quantity`",
+            "`countrycode`",
+            "`status`",
+            "`order_id`",
+            "`order_ids`",
+            "`direction`",
+            "`page`",
+            "`page_size`",
+        ):
+            with self.subTest(parameter=parameter):
+                self.assertIn(parameter, text)
+
+        self.assertIn("`start_date`", text)
+        self.assertIn("`end_date`", text)
+        self.assertIn("`BeginDate`", text)
+        self.assertIn("`EndDate`", text)
+        removed_implementation_note = "当前 MCP Server " + "未" + "转发"
+        self.assertNotIn(removed_implementation_note, text)
+        self.assertIn("`pointstype=0`", text)
+        self.assertIn("`pointstype=1`", text)
+        self.assertIn("`pointstype=2`", text)
+
+    def test_readme_lists_all_supported_tools(self) -> None:
+        text = (ROOT / "README.md").read_text(encoding="utf-8")
+        for tool in TOOLS:
+            with self.subTest(tool=tool):
+                self.assertIn(f"`{tool}`", text)
+
+    def test_scoped_documentation_is_chinese(self) -> None:
         paths = (
             ROOT / "README.md",
             SKILL / "SKILL.md",
             SKILL / "references/mcp-setup.md",
             SKILL / "references/tool-routing.md",
+            SKILL / "references/tool-reference.md",
         )
         for path in paths:
             with self.subTest(path=path):
                 text = path.read_text(encoding="utf-8")
-                self.assertIsNone(re.search(r"[\u3400-\u9fff]", text))
+                self.assertIsNotNone(re.search(r"[\u3400-\u9fff]", text))
 
     def test_no_old_endpoint_or_plausible_real_pat(self) -> None:
         tracked = subprocess.run(
@@ -107,6 +175,9 @@ class SkillContractTests(unittest.TestCase):
         )
         forbidden_host = ".".join(("115", "175", "225", "101"))
         self.assertNotIn(forbidden_host, delivery_text)
+        self.assertNotIn(OLD_ENDPOINT, delivery_text)
+        self.assertNotIn("http://openapi.tvc-mall.com", delivery_text)
+        self.assertNotIn(f"{ENDPOINT}/mcp", delivery_text)
         leaked = re.findall(
             r"tmcp_v1_(?!demo|fake|example)[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+",
             repository_text,
@@ -120,17 +191,18 @@ class SkillContractTests(unittest.TestCase):
             ENDPOINT,
             "https://www.tvcmall.com/user/agentkeys",
             "TVCMALL_API_KEY",
-            "Products",
-            "Orders",
-            "Tracking",
-            "Points",
-            "Balance",
-            "Security",
-            "Validation",
-            "Contributing",
+            "商品",
+            "订单",
+            "物流",
+            "积分",
+            "余额",
+            "安全",
+            "验证",
+            "贡献",
         )
         for value in required:
             with self.subTest(value=value):
                 self.assertIn(value, text)
         forbidden_host = ".".join(("115", "175", "225", "101"))
         self.assertNotIn(forbidden_host, text)
+        self.assertNotIn(OLD_ENDPOINT, text)

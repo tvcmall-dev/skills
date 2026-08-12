@@ -1,44 +1,44 @@
-# TVCMall MCP Setup
+# TVCMall MCP 配置
 
-## Determine Configuration State
+## 判断配置状态
 
-1. Check whether the current session has the `tvcmall` MCP dependency and its expected tools.
-2. If it does, call `tvcmall_auth_status` first; do not reinstall automatically.
-3. If it does not, explain that installation follows the connection method documented by [TVCMall MCP](https://github.com/tvcmall-dev/mcp) and registers the remote MCP connection in the user's Codex configuration. Do not clone, build, or start the server repository.
+1. 检查当前会话是否存在 `tvcmall` MCP dependency 及预期工具。
+2. 如果存在，先调用 `tvcmall_auth_status`，不要自动重复安装。
+3. 如果不存在，说明安装遵循 [TVCMall MCP](https://github.com/tvcmall-dev/mcp) 的远程连接方式，并在用户的 Codex 配置中注册 MCP。不要克隆、构建或启动 Server 仓库。
 
 ## API Key
 
-- Ask whether the user already has a `TVCMALL_API_KEY`.
-- If not, direct the user to https://www.tvcmall.com/user/agentkeys to sign in and apply, then pause configuration until the user has obtained a Key.
-- Do not ask the user to paste the Key into chat.
-- If the user has already sent a Key in chat, do not repeat it or continue using that value. Explain that it has been exposed, direct the user to revoke it immediately and request a new Key, then configure the new Key only through the terminal prompt with input echo disabled.
-- Explain that the user has chosen to store the Key in plaintext in the user-level Codex `config.toml`.
-- Accept only a complete personal PAT in the form `tmcp_v1_{tokenId}.{secret}`; do not add a `Bearer ` prefix.
+- 询问用户是否已有 `TVCMALL_API_KEY`。
+- 如没有，引导用户前往 https://www.tvcmall.com/user/agentkeys 登录并申请；在用户取得 Key 前暂停配置。
+- 不要要求用户把 Key 粘贴到聊天中。
+- 如果用户已在聊天中发送 Key，不要重复该 Key，也不要继续使用该值。说明凭据已经暴露，引导用户立即撤销并申请新 Key，然后只通过关闭输入回显的终端提示配置新 Key。
+- 说明用户选择把 Key 明文存储在用户级 Codex `config.toml` 中。
+- 只接受格式为 `tmcp_v1_{tokenId}.{secret}` 的完整个人 PAT，不要添加 `Bearer ` 前缀。
 
-## Configure
+## 写入配置
 
-After receiving the user's explicit confirmation, run this command from the Skill directory:
+用户明确确认后，从 Skill 目录运行：
 
 ```powershell
 python scripts/configure_tvcmall_mcp.py
 ```
 
-The script reads the Key through a terminal prompt with input echo disabled and writes:
+脚本通过关闭输入回显的终端提示读取 Key，并写入：
 
 ```toml
 [mcp_servers.tvcmall]
-url = "https://mcpserver.tvc-mall.com"
+url = "https://openapi.tvc-mall.com/mcp"
 http_headers = { "TVCMALL_API_KEY" = "<TVCMALL_PAT>" }
 ```
 
-Do not pass the Key as a command-line argument. Do not append `/mcp` to the endpoint. The script preserves other Codex settings and MCP Servers, refuses to overwrite invalid TOML, and creates a backup before replacing an existing valid configuration. Do not let another process edit the same `config.toml` while the script is running. The script detects changes made before replacement and fails safely, but the file replacement itself does not provide a cross-process lock.
+不要通过命令行参数传递 Key。`/mcp` 是 endpoint 的组成部分：不要删除，也不要重复追加。脚本保留其他 Codex 设置和 MCP Server；现有 TOML 无效时拒绝覆盖；替换有效配置前创建备份。脚本运行时，不要让其他进程编辑同一个 `config.toml`。脚本能检测替换前发生的变更并安全失败，但文件替换本身不提供跨进程锁。
 
-## Restart and Verify
+## 重启与验证
 
-Ask the user to restart Codex or start a new session. After confirming that the `tvcmall` tools are visible, call `tvcmall_auth_status`. `configured: true` only means that the current MCP session loaded a PAT; verify the relevant permission through the read-only business query requested by the user.
+要求用户重启 Codex 或开启新会话。确认 `tvcmall` 工具可见后，调用 `tvcmall_auth_status`。`configured: true` 只表示当前 MCP 会话已加载 PAT；仍需通过用户请求的只读业务查询验证对应权限。
 
-## Configuration Errors
+## 配置错误
 
-- Invalid TOML or a write failure: preserve the original configuration and report only the non-sensitive error and backup path.
-- Network errors or `5xx`: keep the HTTPS configuration, explain that the canonical service is temporarily unavailable, and suggest trying again later.
-- Do not fall back to HTTP, switch to the former endpoint, or append a path automatically.
+- TOML 无效或写入失败：保留原配置，只报告不含敏感信息的错误和备份路径。
+- 网络错误或 `5xx`：保留规范 HTTPS 配置，说明服务可能暂时不可用并建议稍后重试。
+- 不要回退到 HTTP、切换到旧 endpoint、删除 `/mcp` 或追加第二个 `/mcp`。
