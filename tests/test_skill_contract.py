@@ -49,3 +49,25 @@ class SkillContractTests(unittest.TestCase):
             repository_text,
         )
         self.assertEqual(leaked, [])
+
+    def test_readme_covers_setup_usage_security_and_contributing(self) -> None:
+        text = (ROOT / "README.md").read_text(encoding="utf-8")
+        required = (
+            "query-tvcmall-customer-data",
+            ENDPOINT,
+            "https://www.tvcmall.com/user/agentkeys",
+            "TVCMALL_API_KEY",
+            "商品",
+            "订单",
+            "物流",
+            "积分",
+            "余额",
+            "安全",
+            "验证",
+            "贡献",
+        )
+        for value in required:
+            with self.subTest(value=value):
+                self.assertIn(value, text)
+        forbidden_host = ".".join(("115", "175", "225", "101"))
+        self.assertNotIn(forbidden_host, text)
