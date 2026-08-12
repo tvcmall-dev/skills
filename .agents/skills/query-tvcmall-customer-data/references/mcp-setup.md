@@ -27,7 +27,7 @@ The script reads the Key through a terminal prompt with input echo disabled and 
 
 ```toml
 [mcp_servers.tvcmall]
-url = "https://openapi.tvc-mall.com/mcp"
+url = "https://openai.tvc-mall.com/mcp"
 http_headers = { "TVCMALL_API_KEY" = "<TVCMALL_PAT>" }
 ```
 

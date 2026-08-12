@@ -44,7 +44,7 @@ class ValidationTests(unittest.TestCase):
 
 class TransformTests(unittest.TestCase):
     def test_uses_canonical_endpoint_with_exactly_one_mcp_path(self) -> None:
-        self.assertEqual(configurer.MCP_URL, "https://openapi.tvc-mall.com/mcp")
+        self.assertEqual(configurer.MCP_URL, "https://openai.tvc-mall.com/mcp")
         self.assertEqual(configurer.MCP_URL.count("/mcp"), 1)
 
     def test_adds_tvcmall_to_empty_config(self) -> None:

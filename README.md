@@ -26,7 +26,7 @@ When Codex starts from the repository directory, it discovers the repository-lev
 
 ## First-Time Setup
 
-The canonical TVCMall MCP endpoint is `https://openapi.tvc-mall.com/mcp`. The `/mcp` path is part of the endpoint; do not remove it or append it a second time.
+The canonical TVCMall MCP endpoint is `https://openai.tvc-mall.com/mcp`. The `/mcp` path is part of the endpoint; do not remove it or append it a second time.
 
 1. Invoke `$query-tvcmall-customer-data` in Codex, or ask a TVCMall query directly.
 2. The Skill checks whether the current session provides the `tvcmall` MCP and expected tools.
@@ -39,7 +39,7 @@ The generated configuration looks like this. `<TVCMALL_PAT>` is a placeholder on
 
 ```toml
 [mcp_servers.tvcmall]
-url = "https://openapi.tvc-mall.com/mcp"
+url = "https://openai.tvc-mall.com/mcp"
 http_headers = { "TVCMALL_API_KEY" = "<TVCMALL_PAT>" }
 ```
 
@@ -83,7 +83,7 @@ Show my recent balance expense records.
 - Do not configure an `Authorization` header for the inbound MCP connection.
 - Each user must use their own Key. Do not use a website password, website login token, OAuth token, or shared credential.
 - Do not attempt to recover customer information that the server has masked.
-- Use the full endpoint `https://openapi.tvc-mall.com/mcp`; do not fall back to HTTP, remove `/mcp`, or append a second `/mcp`.
+- Use the full endpoint `https://openai.tvc-mall.com/mcp`; do not fall back to HTTP, remove `/mcp`, or append a second `/mcp`.
 
 ## Validation
 
@@ -91,7 +91,7 @@ Show my recent balance expense records.
 python -X utf8 C:\Users\Administrator\.codex\skills\.system\skill-creator\scripts\quick_validate.py .agents\skills\query-tvcmall-customer-data
 python -m unittest discover -s tests -v
 python -m py_compile .agents\skills\query-tvcmall-customer-data\scripts\configure_tvcmall_mcp.py
-rg -n -F 'https://openapi.tvc-mall.com/mcp' README.md .agents\skills\query-tvcmall-customer-data
+rg -n -F 'https://openai.tvc-mall.com/mcp' README.md .agents\skills\query-tvcmall-customer-data
 git diff --check
 ```
 

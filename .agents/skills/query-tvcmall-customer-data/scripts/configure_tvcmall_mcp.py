@@ -13,7 +13,7 @@ import tomllib
 import sys
 
 
-MCP_URL = "https://openapi.tvc-mall.com/mcp"
+MCP_URL = "https://openai.tvc-mall.com/mcp"
 API_KEY_PATTERN = re.compile(r"^tmcp_v1_[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+$")
 
 

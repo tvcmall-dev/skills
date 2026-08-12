@@ -9,4 +9,4 @@ dependencies:
       value: "tvcmall"
       description: "TVCMall Customer MCP for authenticated read-only customer queries"
       transport: "streamable_http"
-      url: "https://openapi.tvc-mall.com/mcp"
+      url: "https://openai.tvc-mall.com/mcp"

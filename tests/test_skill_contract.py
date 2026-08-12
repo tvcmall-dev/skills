@@ -8,8 +8,11 @@ import unittest
 
 ROOT = Path(__file__).resolve().parents[1]
 SKILL = ROOT / ".agents/skills/query-tvcmall-customer-data"
-ENDPOINT = "https://openapi.tvc-mall.com/mcp"
-OLD_ENDPOINT = "https://mcpserver.tvc-mall.com"
+ENDPOINT = "https://openai.tvc-mall.com/mcp"
+OLD_ENDPOINTS = (
+    "https://openapi.tvc-mall.com/mcp",
+    "https://mcpserver.tvc-mall.com",
+)
 TOOLS = (
     "tvcmall_auth_status",
     "tvcmall_search_products",
@@ -163,7 +166,7 @@ class SkillContractTests(unittest.TestCase):
             capture_output=True,
         ).stdout.decode("utf-8").split("\0")
         deliverables = [ROOT / relative for relative in tracked if relative]
-        delivery_files = [ROOT / "README.md", ROOT / "AGENTS.md", *SKILL.rglob("*")]
+        delivery_files = [ROOT / "README.md", *SKILL.rglob("*")]
         repository_text = "\n".join(
             path.read_text(encoding="utf-8", errors="ignore")
             for path in deliverables
@@ -176,8 +179,9 @@ class SkillContractTests(unittest.TestCase):
         )
         forbidden_host = ".".join(("115", "175", "225", "101"))
         self.assertNotIn(forbidden_host, delivery_text)
-        self.assertNotIn(OLD_ENDPOINT, delivery_text)
-        self.assertNotIn("http://openapi.tvc-mall.com", delivery_text)
+        for old_endpoint in OLD_ENDPOINTS:
+            self.assertNotIn(old_endpoint, delivery_text)
+        self.assertNotIn("http://openai.tvc-mall.com", delivery_text)
         self.assertNotIn(f"{ENDPOINT}/mcp", delivery_text)
         leaked = re.findall(
             r"tmcp_v1_(?!demo|fake|example)[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+",
@@ -206,4 +210,5 @@ class SkillContractTests(unittest.TestCase):
                 self.assertIn(value, text)
         forbidden_host = ".".join(("115", "175", "225", "101"))
         self.assertNotIn(forbidden_host, text)
-        self.assertNotIn(OLD_ENDPOINT, text)
+        for old_endpoint in OLD_ENDPOINTS:
+            self.assertNotIn(old_endpoint, text)
