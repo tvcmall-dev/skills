@@ -1,10 +1,15 @@
 from __future__ import annotations
 
+import contextlib
 import importlib.util
+import io
+import os
 from pathlib import Path
 import sys
+import tempfile
 import tomllib
 import unittest
+from unittest import mock
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -90,3 +95,86 @@ OLD = "value"
         parsed = tomllib.loads(updated)
         self.assertEqual(parsed["model"], "gpt-5")
         self.assertEqual(parsed["mcp_servers"]["tvcmall"]["url"], configurer.MCP_URL)
+
+
+class FileUpdateTests(unittest.TestCase):
+    def test_creates_backup_and_preserves_other_config(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "config.toml"
+            original = '[mcp_servers.other]\nurl = "https://example.com/mcp"\n'
+            path.write_text(original, encoding="utf-8")
+            result = configurer.configure_file(path, "tmcp_v1_demo.secret")
+            self.assertTrue(result.changed)
+            assert result.backup_path is not None
+            self.assertEqual(result.backup_path.read_text(encoding="utf-8"), original)
+            parsed = tomllib.loads(path.read_text(encoding="utf-8"))
+            self.assertIn("other", parsed["mcp_servers"])
+            self.assertIn("tvcmall", parsed["mcp_servers"])
+
+    def test_invalid_toml_does_not_change_file(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "config.toml"
+            path.write_text("[broken", encoding="utf-8")
+            with self.assertRaises(ValueError):
+                configurer.configure_file(path, "tmcp_v1_demo.secret")
+            self.assertEqual(path.read_text(encoding="utf-8"), "[broken")
+            self.assertFalse(path.with_name("config.toml.bak").exists())
+
+    def test_idempotent_update_does_not_create_a_new_backup(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "config.toml"
+            first = configurer.configure_file(path, "tmcp_v1_demo.secret")
+            second = configurer.configure_file(path, "tmcp_v1_demo.secret")
+            self.assertTrue(first.changed)
+            self.assertFalse(second.changed)
+            self.assertIsNone(second.backup_path)
+
+    def test_write_failure_keeps_original(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "config.toml"
+            original = 'model = "gpt-5"\n'
+            path.write_text(original, encoding="utf-8")
+            with mock.patch.object(configurer.os, "replace", side_effect=OSError("blocked")):
+                with self.assertRaises(OSError):
+                    configurer.configure_file(path, "tmcp_v1_demo.secret")
+            self.assertEqual(path.read_text(encoding="utf-8"), original)
+
+    def test_read_only_destination_failure_keeps_original(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "config.toml"
+            original = 'model = "gpt-5"\n'
+            path.write_text(original, encoding="utf-8")
+            with mock.patch.object(configurer.tempfile, "mkstemp", side_effect=PermissionError("read only")):
+                with self.assertRaises(PermissionError):
+                    configurer.configure_file(path, "tmcp_v1_demo.secret")
+            self.assertEqual(path.read_text(encoding="utf-8"), original)
+
+
+class CliTests(unittest.TestCase):
+    def test_resolve_config_path_prefers_codex_home(self) -> None:
+        with mock.patch.dict(os.environ, {"CODEX_HOME": "C:/tmp/codex-home"}, clear=True):
+            self.assertEqual(configurer.resolve_config_path(), Path("C:/tmp/codex-home/config.toml"))
+
+    def test_main_reads_key_with_getpass_and_does_not_print_it(self) -> None:
+        secret = "tmcp_v1_private.secret"
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "config.toml"
+            stdout = io.StringIO()
+            stderr = io.StringIO()
+            with mock.patch.object(configurer.getpass, "getpass", return_value=secret):
+                with contextlib.redirect_stdout(stdout), contextlib.redirect_stderr(stderr):
+                    code = configurer.main(["--config", str(path), "--yes"])
+            self.assertEqual(code, 0)
+            self.assertNotIn(secret, stdout.getvalue() + stderr.getvalue())
+            self.assertIn(secret, path.read_text(encoding="utf-8"))
+
+    def test_main_rejects_invalid_key_without_writing(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "config.toml"
+            stderr = io.StringIO()
+            with mock.patch.object(configurer.getpass, "getpass", return_value="invalid"):
+                with contextlib.redirect_stderr(stderr):
+                    code = configurer.main(["--config", str(path), "--yes"])
+            self.assertEqual(code, 2)
+            self.assertFalse(path.exists())
+            self.assertNotIn("invalid", stderr.getvalue())

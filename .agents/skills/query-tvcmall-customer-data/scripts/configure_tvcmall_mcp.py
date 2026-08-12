@@ -1,12 +1,28 @@
 from __future__ import annotations
 
+import argparse
+from collections.abc import Sequence
+from dataclasses import dataclass
+import getpass
+import os
+from pathlib import Path
 import re
+import shutil
+import tempfile
 import tomllib
+import sys
 
 
 MCP_URL = "https://mcpserver.tvc-mall.com"
 API_KEY_PATTERN = re.compile(r"^tmcp_v1_[^\s.]+\.[^\s.]+$")
 TABLE_HEADER_PATTERN = re.compile(r"(?m)^\s*\[([^\]\r\n]+)\]\s*(?:#.*)?$")
+
+
+@dataclass(frozen=True)
+class ConfigureResult:
+    config_path: Path
+    backup_path: Path | None
+    changed: bool
 
 
 def validate_api_key(value: str) -> str:
@@ -73,3 +89,75 @@ def upsert_tvcmall_config(source: str, api_key: str) -> str:
     updated = f"{base}{newline}{newline}{section}" if base else section
     tomllib.loads(updated)
     return updated
+
+
+def configure_file(config_path: Path, api_key: str) -> ConfigureResult:
+    source = config_path.read_text(encoding="utf-8") if config_path.exists() else ""
+    updated = upsert_tvcmall_config(source, api_key)
+    if updated == source:
+        return ConfigureResult(config_path, None, False)
+
+    config_path.parent.mkdir(parents=True, exist_ok=True)
+    backup_path: Path | None = None
+    if config_path.exists():
+        backup_path = config_path.with_name(f"{config_path.name}.bak")
+        shutil.copy2(config_path, backup_path)
+
+    descriptor, temporary_name = tempfile.mkstemp(
+        prefix=f".{config_path.name}.", suffix=".tmp", dir=config_path.parent
+    )
+    temporary_path = Path(temporary_name)
+    try:
+        with os.fdopen(descriptor, "w", encoding="utf-8", newline="") as stream:
+            stream.write(updated)
+            stream.flush()
+            os.fsync(stream.fileno())
+        os.replace(temporary_path, config_path)
+    finally:
+        temporary_path.unlink(missing_ok=True)
+    return ConfigureResult(config_path, backup_path, True)
+
+
+def resolve_config_path(explicit: Path | None = None) -> Path:
+    if explicit is not None:
+        return explicit
+    codex_home = os.environ.get("CODEX_HOME")
+    return (Path(codex_home) if codex_home else Path.home() / ".codex") / "config.toml"
+
+
+def build_parser() -> argparse.ArgumentParser:
+    parser = argparse.ArgumentParser(description="Configure the TVCMall remote MCP for Codex")
+    parser.add_argument("--config", type=Path, help=argparse.SUPPRESS)
+    parser.add_argument(
+        "--yes",
+        action="store_true",
+        help="confirm plaintext storage without an interactive yes/no prompt",
+    )
+    return parser
+
+
+def main(argv: Sequence[str] | None = None) -> int:
+    args = build_parser().parse_args(argv)
+    config_path = resolve_config_path(args.config)
+    if not args.yes:
+        print(f"TVCMALL_API_KEY will be stored in plaintext at {config_path}.")
+        if input("Continue? [y/N] ").strip().lower() not in {"y", "yes"}:
+            print("Configuration cancelled.")
+            return 1
+    try:
+        api_key = validate_api_key(getpass.getpass("TVCMALL_API_KEY: "))
+        result = configure_file(config_path, api_key)
+    except (OSError, ValueError) as exc:
+        print(f"Configuration failed: {exc}", file=sys.stderr)
+        return 2
+
+    state = "updated" if result.changed else "already current"
+    print(f"TVCMall MCP configuration {state}: {result.config_path}")
+    if result.backup_path:
+        print(f"Backup created: {result.backup_path}")
+    print("Restart Codex or start a new session, then verify the tvcmall MCP tools.")
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())
