@@ -35,6 +35,23 @@ class SkillContractTests(unittest.TestCase):
             self.assertIn(relative, text)
             self.assertTrue((SKILL / relative).exists())
 
+    def test_references_close_key_and_query_routing_gaps(self) -> None:
+        setup = (SKILL / "references/mcp-setup.md").read_text(encoding="utf-8")
+        routing = (SKILL / "references/tool-routing.md").read_text(encoding="utf-8")
+        for value in ("立即撤销", "申请新 Key", "不要复述"):
+            with self.subTest(value=value):
+                self.assertIn(value, setup)
+        for value in (
+            "page=1",
+            "page_size=20",
+            "page_size=10",
+            "不要声称结果已严格按时间排序",
+            "缺少 `order_id`",
+            "省略 `direction` 时使用 `all`",
+        ):
+            with self.subTest(value=value):
+                self.assertIn(value, routing)
+
     def test_no_old_endpoint_or_plausible_real_pat(self) -> None:
         deliverables = [ROOT / "README.md", ROOT / "AGENTS.md", *SKILL.rglob("*")]
         repository_text = "\n".join(

@@ -11,6 +11,7 @@
 - 询问用户是否已有 `TVCMALL_API_KEY`。
 - 如果没有，引导用户前往 https://www.tvcmall.com/user/agentkeys 登录并申请，然后暂停配置，等待用户取得 Key。
 - 不要求用户把 Key 粘贴到聊天中。
+- 如果用户已经在聊天中发送了 Key，不要复述或继续使用该值；说明它已暴露，引导用户立即撤销并申请新 Key，然后只通过终端无回显输入配置新 Key。
 - 说明用户已选择将 Key 明文保存在用户级 Codex `config.toml` 中。
 - 只接受完整的个人 PAT，格式为 `tmcp_v1_{tokenId}.{secret}`；不要添加 `Bearer ` 前缀。
 
