@@ -1,0 +1,14 @@
+.worktrees/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.coverage
+htmlcov/
+.venv/
+venv/
+.env
+.env.*
+!.env.example
+config.toml
+*.bak
+*.tmp
