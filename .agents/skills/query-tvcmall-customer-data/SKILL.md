@@ -14,7 +14,7 @@ description: Use when Codex needs to install or repair the tvcmall MCP connectio
 
 ## Route Requests
 
-Read [references/tool-routing.md](references/tool-routing.md) completely before selecting a tool. When you need to confirm tool inputs, defaults, or WebApi parameter mappings, read [references/tool-reference.md](references/tool-reference.md) completely. Ask only for parameters required by the selected tool, use bounded queries, and stop when the user's request is satisfied.
+Read [references/tool-routing.md](references/tool-routing.md) completely before selecting a tool. Inspect the current MCP tool schema before every tool call and obtain its required inputs, types, allowed values, defaults, and limits at runtime. Do not use static documentation as the tool parameter contract. Ask only for inputs required by the current schema, keep queries bounded to the user's request, and stop when the request is satisfied.
 
 ## Protect Customer Data
 

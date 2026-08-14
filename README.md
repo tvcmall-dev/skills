@@ -75,21 +75,21 @@ The configured header value is stored in plaintext in the user-level Codex confi
 
 ## Complete Capability List
 
-All business capabilities are read-only. Detailed parameters, defaults, and WebApi mappings are documented in [Tool Parameter Reference](.agents/skills/query-tvcmall-customer-data/references/tool-reference.md).
+All business capabilities are read-only. Tool parameters, defaults, allowed values, and limits are read dynamically from the current MCP tool schema at runtime.
 
-| Category | Tool | External Parameters | Capability |
-| --- | --- | --- | --- |
-| Auth | `tvcmall_auth_status` | None | Checks whether the current MCP session loaded a header value; it does not validate authorization |
-| Products | `tvcmall_search_products` | `query`, `page`, `page_size` | Searches products by SKU or keyword with pagination; default `tmcp_catalog.read` is allowed unless the server returns `401` |
-| Products | `tvcmall_get_product_detail` | `product_id` | Retrieves one product detail record; the ID must come from search results; default `catalog.read` is allowed unless rejected |
-| Shipping | `tvcmall_estimate_shipping` | `sku`, `quantity`, `countrycode` | Estimates pre-order shipping cost for a product; default `catalog.read` is allowed unless rejected |
-| Orders | `tvcmall_list_orders` | `start_date`, `end_date`, `status`, `page`, `page_size` | Lists orders with pagination; requires a personal Key |
-| Orders | `tvcmall_get_order_detail` | `order_id` | Retrieves order items, totals, and masked shipping information; requires a personal Key |
-| Tracking | `tvcmall_get_tracking_info` | `order_id` | Retrieves tracking history and order shipping cost for one order; requires a personal Key |
-| Tracking | `tvcmall_batch_get_tracking` | `order_ids` | Retrieves tracking for 1 to 50 orders; requires a personal Key |
-| Points | `tvcmall_get_points` | None | Retrieves the points summary; requires a personal Key |
-| Points | `tvcmall_list_point_records` | `direction`, `page`, `page_size` | Lists points ledger records with pagination; requires a personal Key |
-| Balance | `tvcmall_list_balance_records` | `direction`, `page`, `page_size` | Lists balance ledger records with pagination; requires a personal Key |
+| Category | Tool | Capability |
+| --- | --- | --- |
+| Auth | `tvcmall_auth_status` | Checks whether the current MCP session loaded a header value; it does not validate authorization |
+| Products | `tvcmall_search_products` | Searches products by SKU or keyword; default `tmcp_catalog.read` is allowed unless the server returns `401` |
+| Products | `tvcmall_get_product_detail` | Retrieves one product detail record using an identifier returned by product search; default `catalog.read` is allowed unless rejected |
+| Shipping | `tvcmall_estimate_shipping` | Estimates pre-order shipping cost for a product; default `catalog.read` is allowed unless rejected |
+| Orders | `tvcmall_list_orders` | Lists and filters orders; requires a personal Key |
+| Orders | `tvcmall_get_order_detail` | Retrieves order items, totals, and masked shipping information; requires a personal Key |
+| Tracking | `tvcmall_get_tracking_info` | Retrieves tracking history and order shipping cost for one order; requires a personal Key |
+| Tracking | `tvcmall_batch_get_tracking` | Retrieves tracking for multiple orders within the current schema limits; requires a personal Key |
+| Points | `tvcmall_get_points` | Retrieves the points summary; requires a personal Key |
+| Points | `tvcmall_list_point_records` | Lists points ledger records; requires a personal Key |
+| Balance | `tvcmall_list_balance_records` | Lists balance ledger records; requires a personal Key |
 
 The Skill does not support placing orders, making payments, cancelling orders, changing addresses, redeeming points, or exporting files.
 

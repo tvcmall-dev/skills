@@ -64,16 +64,17 @@ class SkillContractTests(unittest.TestCase):
         self.assertNotIn("\n      headers:", text)
         self.assertIn("$query-tvcmall-customer-data", text)
 
-    def test_skill_links_both_references_and_setup_script(self) -> None:
+    def test_skill_links_live_references_and_setup_script(self) -> None:
         text = (SKILL / "SKILL.md").read_text(encoding="utf-8")
         for relative in (
             "references/mcp-setup.md",
             "references/tool-routing.md",
-            "references/tool-reference.md",
             "scripts/configure_tvcmall_mcp.py",
         ):
             self.assertIn(relative, text)
             self.assertTrue((SKILL / relative).exists())
+        self.assertNotIn("references/tool-reference.md", text)
+        self.assertFalse((SKILL / "references/tool-reference.md").exists())
 
     def test_references_close_key_and_query_routing_gaps(self) -> None:
         setup = (SKILL / "references/mcp-setup.md").read_text(encoding="utf-8")
@@ -90,12 +91,7 @@ class SkillContractTests(unittest.TestCase):
             with self.subTest(value=value):
                 self.assertIn(value, setup)
         for value in (
-            "page=1",
-            "page_size=20",
-            "page_size=10",
-            "do not claim that results are strictly sorted by time",
-            "If `order_id` is missing",
-            "When `direction` is omitted, use `all`",
+            "current MCP tool schema",
             "without asking the user to apply for a personal Key first",
             "If a product or shipping tool returns `AUTH_REQUIRED`",
             "Account tools require a personal Key",
@@ -103,51 +99,33 @@ class SkillContractTests(unittest.TestCase):
             with self.subTest(value=value):
                 self.assertIn(value, routing)
 
-    def test_tool_reference_covers_every_tool_and_webapi_mapping(self) -> None:
-        text = (SKILL / "references/tool-reference.md").read_text(encoding="utf-8")
-        for tool in TOOLS:
-            with self.subTest(tool=tool):
-                self.assertIn(f"`{tool}`", text)
+    def test_tool_parameters_come_from_current_mcp_schema(self) -> None:
+        skill = (SKILL / "SKILL.md").read_text(encoding="utf-8")
+        routing = (SKILL / "references/tool-routing.md").read_text(encoding="utf-8")
+        readme = (ROOT / "README.md").read_text(encoding="utf-8")
 
-        for route in (
-            "/v3/product/list/search/mapping",
-            "/v3/productdetail/detail",
-            "/v3/productdetail/shipping/compute",
-            "/v3/user/getorders",
-            "/v3/order/detail",
-            "/order/getlogisticstracking",
-            "/v3/user/points/stat",
-            "/v3/user/points/list",
-            "/v3/user/balance/list",
+        for value in (
+            "Inspect the current MCP tool schema before every tool call",
+            "required inputs, types, allowed values, defaults, and limits",
+            "Do not use static documentation as the tool parameter contract",
         ):
-            with self.subTest(route=route):
-                self.assertIn(f"`{route}`", text)
+            with self.subTest(value=value):
+                self.assertIn(value, skill)
 
-        for parameter in (
-            "`query`",
-            "`product_id`",
-            "`sku`",
-            "`quantity`",
-            "`countrycode`",
-            "`status`",
-            "`order_id`",
-            "`order_ids`",
-            "`direction`",
-            "`page`",
-            "`page_size`",
+        self.assertIn("| Category | Tool | Capability |", readme)
+        self.assertNotIn("External Parameters", readme)
+        self.assertNotIn("Tool Parameter Reference", readme)
+        self.assertNotIn("tool-reference.md", readme)
+        for stale_contract in (
+            "page=1",
+            "page_size=20",
+            "page_size=10",
+            "no more than 50",
+            "V3All",
+            "When `direction` is omitted",
         ):
-            with self.subTest(parameter=parameter):
-                self.assertIn(parameter, text)
-
-        self.assertIn("`start_date`", text)
-        self.assertIn("`end_date`", text)
-        self.assertIn("`BeginDate`", text)
-        self.assertIn("`EndDate`", text)
-        removed_implementation_note = "\u5f53\u524d MCP Server \u672a\u8f6c\u53d1"
-        self.assertNotIn(removed_implementation_note, text)
-        self.assertIn("`pointstype=0`", text)
-        self.assertIn("`pointstype=1`", text)
-        self.assertIn("`pointstype=2`", text)
+            with self.subTest(stale_contract=stale_contract):
+                self.assertNotIn(stale_contract, routing)
 
     def test_readme_lists_all_supported_tools(self) -> None:
         text = (ROOT / "README.md").read_text(encoding="utf-8")
@@ -207,7 +185,6 @@ class SkillContractTests(unittest.TestCase):
             SKILL / "agents/openai.yaml",
             SKILL / "references/mcp-setup.md",
             SKILL / "references/tool-routing.md",
-            SKILL / "references/tool-reference.md",
         )
         for path in paths:
             with self.subTest(path=path):
