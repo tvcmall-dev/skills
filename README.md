@@ -89,6 +89,7 @@ All business capabilities are read-only. Tool parameters, defaults, allowed valu
 | Tracking | `tvcmall_batch_get_tracking` | Retrieves tracking for multiple orders within the current schema limits; requires a personal Key |
 | Points | `tvcmall_get_points` | Retrieves the points summary; requires a personal Key |
 | Points | `tvcmall_list_point_records` | Lists points ledger records; requires a personal Key |
+| Balance | `tvcmall_get_balance` | Retrieves the available and frozen balance summary; requires a personal Key |
 | Balance | `tvcmall_list_balance_records` | Lists balance ledger records; requires a personal Key |
 
 The Skill does not support placing orders, making payments, cancelling orders, changing addresses, redeeming points, or exporting files.
@@ -101,6 +102,7 @@ Search for SKU 100001234A and show the product details.
 Estimate shipping for 2 units of this product to the United States.
 Show tracking status for my recently shipped orders.
 Show my points summary and recent points records.
+Show my available and frozen balance.
 Show my recent balance expense records.
 ```
 

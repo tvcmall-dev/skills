@@ -3,6 +3,7 @@
 ## Global Rules
 
 - Use only `tvcmall` MCP tools as the business-data source.
+- Business route mappings describe MCP behavior only. Do not call the WebApi route directly or bypass MCP authorization.
 - Inspect the current MCP tool schema before each call. Treat that schema as the source of truth for inputs, types, allowed values, defaults, and limits.
 - Keep every operation read-only and query only the scope explicitly requested by the user.
 - Do not recover masked PII, expose raw upstream response bodies, or output authentication data.
@@ -24,6 +25,7 @@
 | View tracking for multiple orders in the current result set | `tvcmall_batch_get_tracking` | Respect the collection and size limits in the current schema |
 | View a points summary | `tvcmall_get_points` | Do not confuse it with points records |
 | View points records | `tvcmall_list_point_records` | Use only filters exposed by the current schema |
+| View the current balance summary | `tvcmall_get_balance` | Use the MCP tool backed by `GET api/v3/user/points/stat?type=balance`; do not confuse it with balance records |
 | View balance records | `tvcmall_list_balance_records` | Use only filters exposed by the current schema |
 
 ## Orders and Tracking
@@ -38,6 +40,7 @@
 
 - Use `tvcmall_get_points` for a points summary.
 - Use `tvcmall_list_point_records` for points records and apply only filter values exposed by the current schema.
+- Use `tvcmall_get_balance` for the current available and frozen balance summary. The MCP tool is backed by `GET api/v3/user/points/stat?type=balance`; never call that WebApi route directly.
 - Use `tvcmall_list_balance_records` for balance records and apply only filter values exposed by the current schema.
 
 ## Stable Errors

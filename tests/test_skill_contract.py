@@ -24,6 +24,7 @@ TOOLS = (
     "tvcmall_batch_get_tracking",
     "tvcmall_get_points",
     "tvcmall_list_point_records",
+    "tvcmall_get_balance",
     "tvcmall_list_balance_records",
 )
 
@@ -126,6 +127,25 @@ class SkillContractTests(unittest.TestCase):
         ):
             with self.subTest(stale_contract=stale_contract):
                 self.assertNotIn(stale_contract, routing)
+
+    def test_balance_summary_routes_to_account_stat(self) -> None:
+        routing = (SKILL / "references/tool-routing.md").read_text(encoding="utf-8")
+        readme = (ROOT / "README.md").read_text(encoding="utf-8")
+
+        self.assertIn(
+            "| View the current balance summary | `tvcmall_get_balance` |",
+            routing,
+        )
+        self.assertIn("`GET api/v3/user/points/stat?type=balance`", routing)
+        self.assertIn(
+            "| View balance records | `tvcmall_list_balance_records` |",
+            routing,
+        )
+        self.assertIn("Do not call the WebApi route directly", routing)
+        self.assertIn(
+            "| Balance | `tvcmall_get_balance` | Retrieves the available and frozen balance summary; requires a personal Key |",
+            readme,
+        )
 
     def test_readme_lists_all_supported_tools(self) -> None:
         text = (ROOT / "README.md").read_text(encoding="utf-8")
