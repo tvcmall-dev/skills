@@ -128,6 +128,25 @@ class SkillContractTests(unittest.TestCase):
             with self.subTest(stale_contract=stale_contract):
                 self.assertNotIn(stale_contract, routing)
 
+    def test_personal_key_configuration_uses_visible_system_terminal(self) -> None:
+        setup = (SKILL / "references/mcp-setup.md").read_text(encoding="utf-8")
+        readme = (ROOT / "README.md").read_text(encoding="utf-8")
+
+        for value in (
+            "visible operating-system terminal",
+            "Do not use an Agent client's embedded PTY",
+            "Start-Process",
+            "-WindowStyle Normal",
+            "Do not pass the Key as a command-line argument or environment variable",
+            "non-sensitive",
+            "open a system terminal manually",
+        ):
+            with self.subTest(value=value):
+                self.assertIn(value, setup)
+
+        self.assertIn("visible operating-system terminal", readme)
+        self.assertIn("embedded PTY", readme)
+
     def test_balance_summary_routes_to_account_stat(self) -> None:
         routing = (SKILL / "references/tool-routing.md").read_text(encoding="utf-8")
         readme = (ROOT / "README.md").read_text(encoding="utf-8")

@@ -52,7 +52,7 @@ The canonical TVCMall MCP endpoint is `https://openai.tvc-mall.com/mcp`. The `/m
 3. If the MCP is not installed, the Skill follows the connection method documented by [TVCMall MCP](https://github.com/tvcmall-dev/mcp) and registers the remote MCP without running a local server.
 4. If you do not have a personal `TVCMALL_API_KEY`, leave the script prompt empty. The Skill stores `tmcp_catalog.read`; the header must not be omitted or left empty, and unregistered users can use the default `catalog.read` access for product and shipping queries.
 5. Only if a catalog query returns `401` or `AUTH_REQUIRED`, or if you need Orders, Tracking, Points, or Balance, sign in and apply for a personal Key at https://www.tvcmall.com/user/agentkeys.
-6. After you explicitly confirm plaintext storage for a personal Key, the local script reads the Key through a terminal prompt with input echo disabled and updates the user-level Codex `config.toml`.
+6. After you explicitly confirm plaintext storage for a personal Key, the Skill opens a visible operating-system terminal and runs the local configuration script there. Enter the Key only at the hidden prompt in that system terminal. The Skill must not use an Agent client's embedded PTY or ask you to send the Key in chat.
 7. Restart Codex or start a new session, then check the `tvcmall` tools and call `tvcmall_auth_status`.
 
 The default catalog configuration looks like this:
