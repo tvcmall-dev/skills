@@ -6,7 +6,7 @@ This repository contains reusable TVCMall Agent Skills. The current Skill is `qu
 
 | Skill | Capabilities |
 | --- | --- |
-| `query-tvcmall-customer-data` | Authenticated, read-only Products, pre-order shipping estimates, Orders, Tracking, Points, and Balance queries |
+| `query-tvcmall-customer-data` | Authenticated, read-only product search and filters, pre-order shipping estimates, orders, tracking, remaining points, current balance, and balance-record queries |
 
 ## Requirements
 
@@ -71,16 +71,16 @@ All business capabilities are read-only. Tool parameters, defaults, allowed valu
 | Category | Tool | Capability |
 | --- | --- | --- |
 | Auth | `tvcmall_auth_status` | Checks whether the current MCP session loaded a Key; it does not validate authorization |
-| Products | `tvcmall_search_products` | Searches products by SKU or keyword; requires a personal Key |
+| Products | `tvcmall_search_products` | Searches products by SKU, keyword, or publish-date range and reports the authoritative result total; requires a personal Key |
+| Products | `tvcmall_get_product_filters` | Resolves dynamic product attribute filter Codes from a search result; requires a personal Key |
 | Products | `tvcmall_get_product_detail` | Retrieves one product detail record using an identifier returned by product search; requires a personal Key |
 | Shipping | `tvcmall_estimate_shipping` | Estimates pre-order shipping cost for a product; requires a personal Key |
 | Orders | `tvcmall_list_orders` | Lists and filters orders; requires a personal Key |
 | Orders | `tvcmall_get_order_detail` | Retrieves order items, totals, and masked shipping information; requires a personal Key |
 | Tracking | `tvcmall_get_tracking_info` | Retrieves tracking history and order shipping cost for one order; requires a personal Key |
 | Tracking | `tvcmall_batch_get_tracking` | Retrieves tracking for multiple orders within the current schema limits; requires a personal Key |
-| Points | `tvcmall_get_points` | Retrieves the points summary; requires a personal Key |
-| Points | `tvcmall_list_point_records` | Lists points ledger records; requires a personal Key |
-| Balance | `tvcmall_get_balance` | Retrieves the available and frozen balance summary; requires a personal Key |
+| Points | `tvcmall_get_points` | Retrieves the remaining points without rounding decimal values; requires a personal Key |
+| Balance | `tvcmall_get_balance` | Retrieves the backend-formatted current balance; requires a personal Key |
 | Balance | `tvcmall_list_balance_records` | Lists balance ledger records; requires a personal Key |
 
 The Skill does not support placing orders, making payments, cancelling orders, changing addresses, redeeming points, or exporting files.
@@ -90,10 +90,12 @@ The Skill does not support placing orders, making payments, cancelling orders, c
 ```text
 Use $query-tvcmall-customer-data to list my 10 orders.
 Search for SKU 100001234A and show the product details.
+How many products were added today?
+Find black cases for iPhone 17 Pro.
 Estimate shipping for 2 units of this product to the United States.
 Show tracking status for my recently shipped orders.
-Show my points summary and recent points records.
-Show my available and frozen balance.
+Show my remaining points.
+Show my current balance.
 Show my recent balance expense records.
 ```
 

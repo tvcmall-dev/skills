@@ -16,16 +16,24 @@
 | User Intent | Tool | Required Behavior |
 | --- | --- | --- |
 | Search for a product by SKU or keyword | `tvcmall_search_products` | Stop when there are no results; when there are multiple results, present choices instead of selecting one automatically |
+| Count or search products in a publish-date range | `tvcmall_search_products` | Use the date inputs exposed by the current schema and report the authoritative `total`; do not substitute the current page's item count |
+| Resolve product attributes such as manufacturer, model, color, or packaging | `tvcmall_get_product_filters` | Use the filter-cache token returned by product search and only reuse Codes returned by the filter tool |
 | View one product's details | `tvcmall_get_product_detail` | Use the product reference returned by search in the field required by the current schema |
 | Estimate shipping for products not yet ordered | `tvcmall_estimate_shipping` | Collect only the destination and product inputs required by the current schema |
 | Query or filter orders | `tvcmall_list_orders` | Use only filters and pagination options exposed by the current schema |
 | View one order's details | `tvcmall_get_order_detail` | Use an order reference supplied by the user or returned by a tool |
 | View tracking or shipping cost for one placed order | `tvcmall_get_tracking_info` | Do not substitute a product shipping estimate |
 | View tracking for multiple orders in the current result set | `tvcmall_batch_get_tracking` | Respect the collection and size limits in the current schema |
-| View a points summary | `tvcmall_get_points` | Do not confuse it with points records |
-| View points records | `tvcmall_list_point_records` | Use only filters exposed by the current schema |
-| View the current balance summary | `tvcmall_get_balance` | Use the MCP tool backed by `GET api/v3/user/points/stat?type=balance`; do not confuse it with balance records |
+| View remaining points | `tvcmall_get_points` | Return the value without rounding and do not describe it as a broader points summary |
+| View the current balance | `tvcmall_get_balance` | Use the MCP tool backed by `GET api/v3/user/points/stat?type=balance`; do not confuse it with balance records |
 | View balance records | `tvcmall_list_balance_records` | Use only filters exposed by the current schema |
+
+## Product Search and Filters
+
+- For a new-arrival count or publish-date request, call `tvcmall_search_products` using the date-range inputs exposed by the current MCP schema and report the authoritative `total`. Do not infer a catalog count from the number of items on the current page.
+- For a manufacturer, model, color, or packaging requirement, first search the base product terms without the attribute value. Read the filter-cache token from that result, call `tvcmall_get_product_filters` through its current schema, select the matching returned Code, and search again through the current search schema.
+- Do not guess a filter Code or pass an attribute name or value where the current schema requires a Code.
+- If the search result has no filter-cache token or the filter tool does not return the requested value, explain that the attribute Code could not be resolved. Do not claim that the initial unfiltered results satisfy the requested attribute.
 
 ## Orders and Tracking
 
@@ -37,10 +45,10 @@
 
 ## Points and Balance
 
-- Use `tvcmall_get_points` for a points summary.
-- Use `tvcmall_list_point_records` for points records and apply only filter values exposed by the current schema.
-- Use `tvcmall_get_balance` for the current available and frozen balance summary. The MCP tool is backed by `GET api/v3/user/points/stat?type=balance`; never call that WebApi route directly.
-- Use `tvcmall_list_balance_records` for balance records and apply only filter values exposed by the current schema.
+- Use `tvcmall_get_points` only for the remaining points. Decimal point values are valid; do not round them or describe the result as a broader points summary.
+- Point transaction history is not currently exposed by a registered MCP tool. Do not invent or route a point-records query.
+- Use `tvcmall_get_balance` for the backend-formatted current balance. Return the formatted value as provided; do not add currency formatting or claim that a frozen balance is included. The MCP tool is backed by `GET api/v3/user/points/stat?type=balance`; never call that WebApi route directly.
+- Use `tvcmall_list_balance_records` for balance transaction history and apply only filters exposed by the current schema.
 
 ## Stable Errors
 
@@ -49,3 +57,5 @@
 - `RATE_LIMITED`: suggest waiting before retrying.
 - `API_UNAVAILABLE`: explain that the MCP or WebApi is temporarily unavailable; do not fabricate results.
 - `SESSION_NOT_FOUND`: ask the user to reconnect or restart Codex.
+- `Invalid params`: re-read the current MCP tool schema and correct the input; do not call WebApi directly.
+- `SESSION_CAPACITY_REACHED`: wait before reconnecting; do not retry aggressively.

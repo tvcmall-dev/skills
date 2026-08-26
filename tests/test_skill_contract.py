@@ -16,6 +16,7 @@ OLD_ENDPOINTS = (
 TOOLS = (
     "tvcmall_auth_status",
     "tvcmall_search_products",
+    "tvcmall_get_product_filters",
     "tvcmall_get_product_detail",
     "tvcmall_estimate_shipping",
     "tvcmall_list_orders",
@@ -23,10 +24,10 @@ TOOLS = (
     "tvcmall_get_tracking_info",
     "tvcmall_batch_get_tracking",
     "tvcmall_get_points",
-    "tvcmall_list_point_records",
     "tvcmall_get_balance",
     "tvcmall_list_balance_records",
 )
+DISABLED_TOOLS = ("tvcmall_list_point_records",)
 
 
 class SkillContractTests(unittest.TestCase):
@@ -146,12 +147,12 @@ class SkillContractTests(unittest.TestCase):
         self.assertIn("visible operating-system terminal", readme)
         self.assertIn("embedded PTY", readme)
 
-    def test_balance_summary_routes_to_account_stat(self) -> None:
+    def test_current_balance_routes_to_account_stat(self) -> None:
         routing = (SKILL / "references/tool-routing.md").read_text(encoding="utf-8")
         readme = (ROOT / "README.md").read_text(encoding="utf-8")
 
         self.assertIn(
-            "| View the current balance summary | `tvcmall_get_balance` |",
+            "| View the current balance | `tvcmall_get_balance` |",
             routing,
         )
         self.assertIn("`GET api/v3/user/points/stat?type=balance`", routing)
@@ -161,15 +162,48 @@ class SkillContractTests(unittest.TestCase):
         )
         self.assertIn("Do not call the WebApi route directly", routing)
         self.assertIn(
-            "| Balance | `tvcmall_get_balance` | Retrieves the available and frozen balance summary; requires a personal Key |",
+            "| Balance | `tvcmall_get_balance` | Retrieves the backend-formatted current balance; requires a personal Key |",
             readme,
         )
+        self.assertNotIn("available and frozen balance", readme)
 
     def test_readme_lists_all_supported_tools(self) -> None:
-        text = (ROOT / "README.md").read_text(encoding="utf-8")
+        readme = (ROOT / "README.md").read_text(encoding="utf-8")
+        routing = (SKILL / "references/tool-routing.md").read_text(encoding="utf-8")
         for tool in TOOLS:
             with self.subTest(tool=tool):
-                self.assertIn(f"`{tool}`", text)
+                self.assertIn(f"`{tool}`", readme)
+        for tool in DISABLED_TOOLS:
+            with self.subTest(disabled_tool=tool):
+                self.assertNotIn(tool, readme)
+                self.assertNotIn(tool, routing)
+
+    def test_user_visible_capabilities_match_current_mcpserver(self) -> None:
+        routing = (SKILL / "references/tool-routing.md").read_text(encoding="utf-8")
+        readme = (ROOT / "README.md").read_text(encoding="utf-8")
+
+        for value in (
+            "authoritative `total`",
+            "`tvcmall_get_product_filters`",
+            "Do not guess a filter Code",
+            "remaining points",
+            "Decimal point values",
+            "backend-formatted current balance",
+            "do not add currency formatting",
+            "`Invalid params`",
+            "`SESSION_CAPACITY_REACHED`",
+        ):
+            with self.subTest(value=value):
+                self.assertIn(value, routing)
+
+        for value in (
+            "publish-date range",
+            "`tvcmall_get_product_filters`",
+            "remaining points",
+            "backend-formatted current balance",
+        ):
+            with self.subTest(value=value):
+                self.assertIn(value, readme)
 
     def test_readme_lists_skill_installation_options_for_agent_tools(self) -> None:
         text = (ROOT / "README.md").read_text(encoding="utf-8")
