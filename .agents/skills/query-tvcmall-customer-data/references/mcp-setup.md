@@ -8,13 +8,12 @@
 
 ## API Key
 
-- Product and shipping queries can start without a personal `TVCMALL_API_KEY`; configure the default `tmcp_catalog.read` header value so the server can authorize default `catalog.read` access.
-- Only after a catalog query returns `401` or `AUTH_REQUIRED`, direct the user to https://www.tvcmall.com/user/agentkeys to sign in and apply for a personal Key.
-- Account tools for orders, tracking, points, and balance require a personal `TVCMALL_API_KEY`; direct the user to https://www.tvcmall.com/user/agentkeys before calling those tools if only `tmcp_catalog.read` is configured.
+- Ask whether the user already has a `TVCMALL_API_KEY`.
+- If not, direct the user to https://www.tvcmall.com/user/agentkeys to sign in and apply, then pause configuration until the user has obtained a Key.
 - Do not ask the user to paste the Key into chat.
 - If the user has already sent a Key in chat, do not repeat it or continue using that value. Explain that it has been exposed, direct the user to revoke it immediately and request a new Key, then configure the new Key only through the system-terminal prompt with input echo disabled.
-- Explain that the user has chosen to store the header value in plaintext in the user-level Codex `config.toml`.
-- Accept either the default `tmcp_catalog.read` value or a complete personal PAT in the form `tmcp_v1_{tokenId}.{secret}`; do not add a `Bearer ` prefix.
+- Explain that the user has chosen to store the Key in plaintext in the user-level Codex `config.toml`.
+- Accept only a complete personal PAT in the form `tmcp_v1_{tokenId}.{secret}`; do not add a `Bearer ` prefix.
 
 ## Configure
 
@@ -31,23 +30,23 @@ Start-Process -FilePath 'powershell.exe' -ArgumentList @(
 ) -WindowStyle Normal -Wait
 ```
 
-Do not pass the Key as a command-line argument or environment variable. The user must enter it only at the script's hidden `TVCMALL_API_KEY` prompt in the system terminal. If the user presses Enter without entering a personal Key, the script writes the default catalog header:
+Do not pass the Key as a command-line argument or environment variable. The user must enter it only at the script's hidden `TVCMALL_API_KEY` prompt in the system terminal. Empty input and values that do not match the complete personal PAT form are rejected without changing the configuration. A valid Key produces:
 
 ```toml
 [mcp_servers.tvcmall]
 url = "https://openai.tvc-mall.com/mcp"
-http_headers = { "TVCMALL_API_KEY" = "tmcp_catalog.read" }
+http_headers = { "TVCMALL_API_KEY" = "<TVCMALL_PAT>" }
 ```
 
-When the user enters a personal PAT, the script writes that PAT as the `TVCMALL_API_KEY` value. The `/mcp` path is part of the endpoint: do not remove it or append it a second time. The script preserves other Codex settings and MCP Servers, refuses to overwrite invalid TOML, and creates a backup before replacing an existing valid configuration. Do not let another process edit the same `config.toml` while the script is running. The script detects changes made before replacement and fails safely, but the file replacement itself does not provide a cross-process lock.
+`<TVCMALL_PAT>` is a placeholder only. The `/mcp` path is part of the endpoint: do not remove it or append it a second time. The script preserves other Codex settings and MCP Servers, refuses to overwrite invalid TOML, and creates a backup before replacing an existing valid configuration. Do not let another process edit the same `config.toml` while the script is running. The script detects changes made before replacement and fails safely, but the file replacement itself does not provide a cross-process lock.
 
 On macOS or Linux, use a visible native terminal when a reliable launcher is available. If it is not, provide the exact non-secret command with the resolved script path and ask the user to open a system terminal manually. Do not fall back to an embedded client PTY, and never ask for the Key in chat.
 
-After the system terminal closes, verify only non-sensitive state: the configuration modification time, backup existence, valid TOML, canonical endpoint, header presence, and whether the value has the expected default or personal-PAT shape. Do not print, hash, partially mask, or otherwise expose the configured value.
+After the system terminal closes, verify only non-sensitive state: the configuration modification time, backup existence, valid TOML, canonical endpoint, header presence, and whether the value has the expected personal-PAT shape. Do not print, hash, partially mask, or otherwise expose the configured value.
 
 ## Restart and Verify
 
-Ask the user to restart Codex or start a new session. After confirming that the `tvcmall` tools are visible, call `tvcmall_auth_status`. `configured: true` only means that the current MCP session loaded a header value; verify the relevant permission through the read-only business query requested by the user.
+Ask the user to restart Codex or start a new session. After confirming that the `tvcmall` tools are visible, call `tvcmall_auth_status`. `configured: true` only means that the current MCP session loaded a Key; verify the relevant permission through the read-only business query requested by the user.
 
 ## Configuration Errors
 

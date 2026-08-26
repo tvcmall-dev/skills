@@ -9,8 +9,7 @@
 - Do not recover masked PII, expose raw upstream response bodies, or output authentication data.
 - Keep pagination and batch operations bounded by both the user's request and the limits in the current MCP tool schema.
 - When the current MCP tool schema or response does not prove sorting semantics, do not claim that results are strictly sorted by time, price, or another field.
-- Product and shipping tools can be attempted with the default `tmcp_catalog.read` header without asking the user to apply for a personal Key first.
-- Account tools require a personal Key: orders, tracking, points, and balance must not be attempted with only `tmcp_catalog.read`.
+- Do not call any business tool until the TVCMall MCP is connected and a personal `TVCMALL_API_KEY` has been configured.
 
 ## Routing Table
 
@@ -45,8 +44,7 @@
 
 ## Stable Errors
 
-- If a product or shipping tool returns `AUTH_REQUIRED` or `401`, explain that default `catalog.read` access was rejected and guide the user to apply for a personal Key; do not ask for the Key in chat.
-- `AUTH_REQUIRED` for account tools: guide the user through configuring or replacing the personal Key; do not ask for the Key in chat.
+- `AUTH_REQUIRED`: guide the user through configuring or replacing the personal Key; do not ask for the Key in chat.
 - `PERMISSION_DENIED`: explain that a scope or route allowlist may be missing; do not try to bypass it.
 - `RATE_LIMITED`: suggest waiting before retrying.
 - `API_UNAVAILABLE`: explain that the MCP or WebApi is temporarily unavailable; do not fabricate results.

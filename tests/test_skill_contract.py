@@ -85,17 +85,16 @@ class SkillContractTests(unittest.TestCase):
                 self.assertIn(value, setup)
         self.assertIn("Do not let another process edit", setup)
         for value in (
-            "tmcp_catalog.read",
-            "catalog.read",
-            "Only after a catalog query returns `401`",
+            "Ask whether the user already has a `TVCMALL_API_KEY`",
+            "pause configuration until the user has obtained a Key",
+            "complete personal PAT",
         ):
             with self.subTest(value=value):
                 self.assertIn(value, setup)
         for value in (
             "current MCP tool schema",
-            "without asking the user to apply for a personal Key first",
-            "If a product or shipping tool returns `AUTH_REQUIRED`",
-            "Account tools require a personal Key",
+            "Do not call any business tool until",
+            "`AUTH_REQUIRED`: guide the user",
         ):
             with self.subTest(value=value):
                 self.assertIn(value, routing)
@@ -255,6 +254,8 @@ class SkillContractTests(unittest.TestCase):
             self.assertNotIn(old_endpoint, delivery_text)
         self.assertNotIn("http://openai.tvc-mall.com", delivery_text)
         self.assertNotIn(f"{ENDPOINT}/mcp", delivery_text)
+        self.assertNotIn("tmcp_catalog.read", delivery_text)
+        self.assertNotIn("default `catalog.read`", delivery_text)
         leaked = re.findall(
             r"tmcp_v1_(?!demo|fake|example)[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+",
             repository_text,
@@ -268,9 +269,6 @@ class SkillContractTests(unittest.TestCase):
             ENDPOINT,
             "https://www.tvcmall.com/user/agentkeys",
             "TVCMALL_API_KEY",
-            "tmcp_catalog.read",
-            "catalog.read",
-            "401",
             "Products",
             "Orders",
             "Tracking",
