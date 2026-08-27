@@ -35,6 +35,13 @@
 - Do not guess a filter Code or pass an attribute name or value where the current schema requires a Code.
 - If the search result has no filter-cache token or the filter tool does not return the requested value, explain that the attribute Code could not be resolved. Do not claim that the initial unfiltered results satisfy the requested attribute.
 
+## MCP Images
+
+- When displaying an image returned by any TVCMall MCP tool, preserve an absolute HTTP or HTTPS URL unchanged.
+- Treat any other non-empty image value as a relative image path. Remove its leading slash, if present, and append it to `https://img.tvc-mall.com/` with exactly one slash.
+- Examples: `/uploads/details/6622000996A-5.jpg` and `uploads/details/6622000996A-5.jpg` both become `https://img.tvc-mall.com/uploads/details/6622000996A-5.jpg`.
+- Normalize only the displayed URL. Do not modify the raw MCP response or treat the image origin as part of an MCP tool schema.
+
 ## Orders and Tracking
 
 - Use `tvcmall_list_orders` with the current schema's supported filters and bounded pagination.

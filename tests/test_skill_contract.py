@@ -128,6 +128,46 @@ class SkillContractTests(unittest.TestCase):
             with self.subTest(stale_contract=stale_contract):
                 self.assertNotIn(stale_contract, routing)
 
+    def test_relative_image_paths_use_tvcmall_image_origin(self) -> None:
+        routing = (SKILL / "references/tool-routing.md").read_text(encoding="utf-8")
+        readme = (ROOT / "README.md").read_text(encoding="utf-8")
+        image_origin = "https://img.tvc-mall.com/"
+        relative_path = "/uploads/details/6622000996A-5.jpg"
+        relative_path_without_leading_slash = "uploads/details/6622000996A-5.jpg"
+        display_url = "https://img.tvc-mall.com/uploads/details/6622000996A-5.jpg"
+        relative_path_examples = (
+            f"Examples: `{relative_path}` and `{relative_path_without_leading_slash}` "
+            f"both become `{display_url}`."
+        )
+
+        self.assertIn("## MCP Images", routing)
+        self.assertIn("any TVCMall MCP tool", routing)
+        self.assertIn(image_origin, routing)
+        self.assertIn(image_origin, readme)
+        self.assertIn(relative_path, routing)
+        self.assertIn(display_url, routing)
+        self.assertIn(relative_path_examples, routing)
+        self.assertIn("exactly one slash", routing)
+        self.assertIn("preserve an absolute HTTP or HTTPS URL unchanged", routing)
+        self.assertIn(
+            "Treat any other non-empty image value as a relative image path",
+            routing,
+        )
+        self.assertIn("Remove its leading slash, if present", routing)
+        self.assertIn(
+            "Normalize only the displayed URL. Do not modify the raw MCP response "
+            "or treat the image origin as part of an MCP tool schema.",
+            routing,
+        )
+        self.assertIn(
+            "When any TVCMall MCP tool returns a relative image path",
+            readme,
+        )
+        self.assertIn(
+            "Absolute HTTP and HTTPS image URLs remain unchanged.",
+            readme,
+        )
+
     def test_personal_key_configuration_uses_visible_system_terminal(self) -> None:
         setup = (SKILL / "references/mcp-setup.md").read_text(encoding="utf-8")
         readme = (ROOT / "README.md").read_text(encoding="utf-8")
