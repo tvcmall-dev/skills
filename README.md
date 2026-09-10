@@ -10,13 +10,13 @@ This repository contains reusable TVCMall Agent Skills. The current Skill is `qu
 
 ## Requirements
 
-- An agent tool that supports Agent Skills and MCP, such as Codex CLI, Claude Code / Claude Code CLI, Gemini CLI, GitHub Copilot CLI, Cursor CLI, or Qwen Code CLI;
+- An agent tool that supports Agent Skills and MCP, such as the Codex app / CLI, Claude Code / Claude Code CLI, Gemini CLI, GitHub Copilot CLI, Cursor CLI, or Qwen Code CLI;
 - Python 3.11 or later;
 - A personal `TVCMALL_API_KEY`.
 
 ## Install This Skill In Agent Tools
 
-Clone this repository first:
+For manual installation, clone this repository first:
 
 ```powershell
 git clone https://github.com/tvcmall-dev/skills.git
@@ -25,14 +25,22 @@ cd skills
 
 The Skill folder to install is `.agents/skills/query-tvcmall-customer-data`. Use the folder as-is; it already contains `SKILL.md`, `agents/openai.yaml`, `scripts/`, and `references/`.
 
+Codex uses different locations for project-scoped, manually managed user-scoped, and installer-managed Skills:
+
+- For one repository, copy or keep the Skill at `$REPO_ROOT/.agents/skills/query-tvcmall-customer-data`. Codex scans `.agents/skills` from the current working directory up to the repository root.
+- For a manual Codex user-level installation, copy the Skill to `$HOME/.agents/skills/query-tvcmall-customer-data`. In PowerShell, `$HOME` resolves to the current user's profile directory.
+- For a Codex-managed user installation, ask `$skill-installer` to install `https://github.com/tvcmall-dev/skills/tree/main/.agents/skills/query-tvcmall-customer-data`; this method does not require a local clone. The installer places the Skill at `$CODEX_HOME/skills/query-tvcmall-customer-data`, which defaults to `$HOME/.codex/skills/query-tvcmall-customer-data` when `CODEX_HOME` is not set.
+
 | Agent Tool | Project-Level Install | User-Level Install | Verify or Invoke |
 | --- | --- | --- | --- |
-| Codex CLI | Start `codex` from this repository root so Codex discovers `.agents/skills/query-tvcmall-customer-data` | Copy the folder to `$HOME/.agents/skills/query-tvcmall-customer-data` | Invoke `$query-tvcmall-customer-data`, or ask a matching TVCMall question |
+| Codex app / CLI | Copy or keep the folder at `$REPO_ROOT/.agents/skills/query-tvcmall-customer-data` in the target repository | Use `$skill-installer`, or copy the folder to `$HOME/.agents/skills/query-tvcmall-customer-data` | Invoke `$query-tvcmall-customer-data`, or ask a matching TVCMall question |
 | Claude Code / Claude Code CLI | Copy the folder to `.claude/skills/query-tvcmall-customer-data` in your project | Copy the folder to `$HOME/.claude/skills/query-tvcmall-customer-data` | Invoke `/query-tvcmall-customer-data`, or let Claude Code select it from the description |
 | Gemini CLI | Run `gemini skills install https://github.com/tvcmall-dev/skills.git --path .agents/skills/query-tvcmall-customer-data --scope workspace --consent`, or `gemini skills link .agents/skills/query-tvcmall-customer-data --scope workspace` from this repository | Use the same `gemini skills install` command with `--scope user`, or copy the folder to `$HOME/.gemini/skills/query-tvcmall-customer-data` | Run `gemini skills list --all` or `/skills list`, then ask a matching TVCMall question |
 | GitHub Copilot CLI | Keep the folder at `.agents/skills/query-tvcmall-customer-data`, copy it to `.github/skills/query-tvcmall-customer-data`, or run `copilot skill add .agents/skills/query-tvcmall-customer-data` | Copy the folder to `$HOME/.copilot/skills/query-tvcmall-customer-data` or `$HOME/.agents/skills/query-tvcmall-customer-data` | In a Copilot CLI session, run `/skills reload` and `/skills info query-tvcmall-customer-data` |
 | Cursor CLI | Keep the folder at `.agents/skills/query-tvcmall-customer-data`, or copy it to `.cursor/skills/query-tvcmall-customer-data` | Copy the folder to `$HOME/.agents/skills/query-tvcmall-customer-data` or `$HOME/.cursor/skills/query-tvcmall-customer-data` | Invoke `/query-tvcmall-customer-data`, attach it with `@query-tvcmall-customer-data`, or ask a matching TVCMall question |
 | Qwen Code CLI | Copy the folder to `.qwen/skills/query-tvcmall-customer-data` in your project | Copy the folder to `$HOME/.qwen/skills/query-tvcmall-customer-data` | Use `/skills` to inspect available Skills, or ask a matching TVCMall question |
+
+The installed Skill is available on the next turn. If Codex does not detect it, restart Codex and try again.
 
 Official references:
 
@@ -113,7 +121,9 @@ Show my recent balance expense records.
 ## Validation
 
 ```powershell
-python -X utf8 C:\Users\Administrator\.codex\skills\.system\skill-creator\scripts\quick_validate.py .agents\skills\query-tvcmall-customer-data
+$codexHome = if ($env:CODEX_HOME) { $env:CODEX_HOME } else { Join-Path $HOME ".codex" }
+$skillValidator = Join-Path $codexHome "skills/.system/skill-creator/scripts/quick_validate.py"
+python -X utf8 $skillValidator .agents\skills\query-tvcmall-customer-data
 python -m unittest discover -s tests -v
 python -m py_compile .agents\skills\query-tvcmall-customer-data\scripts\configure_tvcmall_mcp.py
 rg -n -F 'https://openai.tvc-mall.com/mcp' README.md .agents\skills\query-tvcmall-customer-data

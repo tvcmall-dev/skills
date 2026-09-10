@@ -250,9 +250,12 @@ class SkillContractTests(unittest.TestCase):
         required = (
             "Install This Skill In Agent Tools",
             "git clone https://github.com/tvcmall-dev/skills.git",
-            ".agents/skills/query-tvcmall-customer-data",
-            "Codex CLI",
+            "$REPO_ROOT/.agents/skills/query-tvcmall-customer-data",
+            "Codex app / CLI",
+            "$CODEX_HOME/skills/query-tvcmall-customer-data",
+            "$HOME/.codex/skills/query-tvcmall-customer-data",
             "$HOME/.agents/skills/query-tvcmall-customer-data",
+            "$skill-installer",
             "$query-tvcmall-customer-data",
             "Claude Code / Claude Code CLI",
             "$HOME/.claude/skills/query-tvcmall-customer-data",
@@ -280,6 +283,8 @@ class SkillContractTests(unittest.TestCase):
 
         forbidden = (
             "Agent Tool Installation",
+            "Start `codex` from this repository root",
+            r"C:\Users\Administrator\.codex\skills",
             "npm install -g @openai/codex",
             "npm install -g @anthropic-ai/claude-code",
             "npm install -g @google/gemini-cli",
@@ -289,6 +294,30 @@ class SkillContractTests(unittest.TestCase):
         for value in forbidden:
             with self.subTest(value=value):
                 self.assertNotIn(value, text)
+
+    def test_readme_distinguishes_codex_install_locations(self) -> None:
+        text = (ROOT / "README.md").read_text(encoding="utf-8")
+        manual_user_install = (
+            "For a manual Codex user-level installation, copy the Skill to "
+            "`$HOME/.agents/skills/query-tvcmall-customer-data`."
+        )
+        installer_managed_install = (
+            "The installer places the Skill at "
+            "`$CODEX_HOME/skills/query-tvcmall-customer-data`, which defaults to "
+            "`$HOME/.codex/skills/query-tvcmall-customer-data` when `CODEX_HOME` "
+            "is not set."
+        )
+
+        self.assertIn(manual_user_install, text)
+        self.assertIn(installer_managed_install, text)
+
+    def test_readme_does_not_require_clone_or_restart_for_codex_installer(self) -> None:
+        text = (ROOT / "README.md").read_text(encoding="utf-8")
+
+        self.assertIn("For manual installation, clone this repository first:", text)
+        self.assertIn("The installed Skill is available on the next turn.", text)
+        self.assertNotIn("Clone this repository first:", text)
+        self.assertNotIn("Start a new Codex session, then invoke", text)
 
     def test_scoped_documentation_is_english_except_agents_md(self) -> None:
         paths = (
