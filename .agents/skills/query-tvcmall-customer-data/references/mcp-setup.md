@@ -11,26 +11,46 @@
 - Ask whether the user already has a `TVCMALL_API_KEY`.
 - If not, direct the user to https://www.tvcmall.com/user/agentkeys to sign in and apply, then pause configuration until the user has obtained a Key.
 - Do not ask the user to paste the Key into chat.
-- If the user has already sent a Key in chat, do not repeat it or continue using that value. Explain that it has been exposed, direct the user to revoke it immediately and request a new Key, then configure the new Key only through the system-terminal prompt with input echo disabled.
+- If the user has already sent a Key in chat, do not repeat it or continue using that value. Explain that it has been exposed, direct the user to revoke it immediately and request a new Key, then configure the new Key only through the native masked Windows dialog or, for the Python fallback, a hidden prompt in a visible operating-system terminal.
 - Explain that the user has chosen to store the Key in plaintext in the user-level Codex `config.toml`.
 - Accept only a complete personal PAT in the form `tmcp_v1_{tokenId}.{secret}`; do not add a `Bearer ` prefix.
 
 ## Configure
 
-After receiving the user's explicit confirmation, run the interactive script in a visible operating-system terminal. Do not use an Agent client's embedded PTY for confirmation or Key input.
+After receiving the user's explicit confirmation, resolve the selected script from the installed Skill directory and launch it by its absolute path. The Agent may run the non-secret launcher command, but the Key itself must never enter chat, an Agent client's embedded PTY, command-line arguments, environment variables, or piped input.
 
-Resolve the script's absolute path from the Skill directory. On Windows, launch a visible PowerShell window with this non-secret command:
+### Windows: Native Dialog
+
+Use `scripts/configure_tvcmall_mcp_windows.ps1` by default. It runs in Windows PowerShell 5.1, displays a local Windows Forms dialog whose Key field is masked by default, and does not require or invoke Python. The dialog provides a dedicated Paste button, received-character feedback, an explicit Show/Hide control, inline validation with retry, and plaintext-storage confirmation. It uses the installed Codex command to validate and update a temporary copy before replacing the user configuration.
+
+Resolve `<absolute-skill-directory>` before running this command; do not pass a relative script path. `-WindowStyle Hidden` hides only the child console, while the Windows Forms dialog remains visible:
 
 ```powershell
-$skillScript = (Resolve-Path 'scripts\configure_tvcmall_mcp.py').Path
-Start-Process -FilePath 'powershell.exe' -ArgumentList @(
-    '-NoProfile',
-    '-Command',
-    "python '$skillScript'; Write-Host ''; Read-Host 'Press Enter to close this window'"
-) -WindowStyle Normal -Wait
+$windowsPowerShell = Join-Path $env:SystemRoot 'System32\WindowsPowerShell\v1.0\powershell.exe'
+$skillScript = (Resolve-Path -LiteralPath '<absolute-skill-directory>\scripts\configure_tvcmall_mcp_windows.ps1').Path
+$arguments = '-NoProfile -STA -File "{0}"' -f $skillScript
+$process = Start-Process -FilePath $windowsPowerShell -ArgumentList $arguments -WindowStyle Hidden -Wait -PassThru
 ```
 
-Do not pass the Key as a command-line argument or environment variable. The user must enter it only at the script's hidden `TVCMALL_API_KEY` prompt in the system terminal. Empty input and values that do not match the complete personal PAT form are rejected without changing the configuration. A valid Key produces:
+The script explicitly shows its form while keeping the child console hidden. Windows can still deny automatic keyboard focus; if the visible dialog is not focused, ask the user to click it. The launcher must use the resolved absolute `.ps1` path. Do not pass the Key as a command-line argument or environment variable, and do not send it as piped input. The dialog trims surrounding copied whitespace, rejects empty or malformed values without changing the configuration, and keeps the dialog open for another attempt.
+
+If automatic launch fails, do not ask for the Key in chat or fall back to an Agent client's embedded PTY. Give the user this non-secret command after replacing `<resolved-absolute-script-path>` with the actual path, and ask them to run it in a system PowerShell:
+
+```powershell
+& "$env:SystemRoot\System32\WindowsPowerShell\v1.0\powershell.exe" -NoProfile -STA -File '<resolved-absolute-script-path>'
+```
+
+### Python Fallback
+
+Use `scripts/configure_tvcmall_mcp.py` on macOS/Linux, or on Windows only when the native dialog cannot be used and Python 3.11 or later is already available. Run it in a visible operating-system terminal, never in an Agent client's embedded PTY. Because plaintext storage was already confirmed, invoke it with `--yes` and its resolved absolute path:
+
+```text
+python -X utf8 "<resolved-absolute-python-script-path>" --yes
+```
+
+Use `python3` where that is the platform's Python 3 command. If an automatic native-terminal launcher is unavailable, give the user the fully substituted non-secret command to run manually. Do not pass the Key in the command, an environment variable, or piped input. The fallback also trims surrounding copied whitespace and rejects malformed values without changing the configuration.
+
+Both configuration paths produce:
 
 ```toml
 [mcp_servers.tvcmall]
@@ -38,11 +58,9 @@ url = "https://openai.tvc-mall.com/mcp"
 http_headers = { "TVCMALL_API_KEY" = "<TVCMALL_PAT>" }
 ```
 
-`<TVCMALL_PAT>` is a placeholder only. The `/mcp` path is part of the endpoint: do not remove it or append it a second time. The script preserves other Codex settings and MCP Servers, refuses to overwrite invalid TOML, and creates a backup before replacing an existing valid configuration. Do not let another process edit the same `config.toml` while the script is running. The script detects changes made before replacement and fails safely, but the file replacement itself does not provide a cross-process lock.
+`<TVCMALL_PAT>` is a placeholder only. The `/mcp` path is part of the endpoint: do not remove it or append it a second time. Both scripts preserve other Codex settings and MCP Servers, refuse to overwrite invalid TOML, and create `config.toml.bak` before replacing an existing valid configuration. A later changed update replaces that fixed backup so it contains the immediately previous configuration without accumulating credential copies. Do not let another process edit the same `config.toml` while setup is running. Both scripts compare the file immediately before replacement and stop if it has already changed, but there is still a small race window because the final replacement does not provide a cross-process lock.
 
-On macOS or Linux, use a visible native terminal when a reliable launcher is available. If it is not, provide the exact non-secret command with the resolved script path and ask the user to open a system terminal manually. Do not fall back to an embedded client PTY, and never ask for the Key in chat.
-
-After the system terminal closes, verify only non-sensitive state: the configuration modification time, backup existence, valid TOML, canonical endpoint, header presence, and whether the value has the expected personal-PAT shape. Do not print, hash, partially mask, or otherwise expose the configured value.
+After the dialog or fallback terminal closes, verify only non-sensitive state: the configuration modification time, backup existence, valid TOML, canonical endpoint, header presence, and whether the value has the expected personal-PAT shape. Do not print, hash, partially mask, or otherwise expose the configured value.
 
 ## Restart and Verify
 
@@ -51,7 +69,8 @@ Ask the user to restart Codex or start a new session. After confirming that the 
 ## Configuration Errors
 
 - Invalid TOML or a write failure: preserve the original configuration and report only the non-sensitive error and backup path.
-- If the system terminal cannot be launched, explain the failure and provide the exact non-secret command for the user to run in a system terminal; do not use an embedded PTY as a fallback.
-- If the user closes the system terminal before configuration completes, report that completion was not verified and offer to launch it again.
+- If automatic Windows launch fails, provide the exact non-secret Windows PowerShell command with the resolved absolute `.ps1` path. Do not use an Agent client's embedded PTY.
+- If the native Windows script itself cannot run, use the Python fallback only when Python 3.11 or later is already available. Do not require Python for the normal Windows path.
+- If the user cancels or closes the dialog or fallback terminal before configuration completes, report that completion was not verified and offer to launch it again.
 - Network errors or `5xx`: keep the canonical HTTPS configuration, explain that the service may be temporarily unavailable, and suggest trying again later.
 - Do not fall back to HTTP, switch to the former endpoint, remove `/mcp`, or append a second `/mcp`.

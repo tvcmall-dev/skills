@@ -29,8 +29,17 @@ class ValidationTests(unittest.TestCase):
         with self.assertRaises(ValueError):
             configurer.validate_api_key("tmcp_catalog.read")
 
-    def test_rejects_whitespace_and_bearer_prefix(self) -> None:
-        for value in (" tmcp_v1_demo.secret", "tmcp_v1_demo.secret ", "Bearer tmcp_v1_demo.secret"):
+    def test_strips_surrounding_whitespace_from_pat(self) -> None:
+        for value in (
+            " tmcp_v1_demo.secret",
+            "tmcp_v1_demo.secret ",
+            "\r\ntmcp_v1_demo.secret\t",
+        ):
+            with self.subTest(value=value):
+                self.assertEqual(configurer.validate_api_key(value), "tmcp_v1_demo.secret")
+
+    def test_rejects_bearer_prefix_and_internal_whitespace(self) -> None:
+        for value in ("Bearer tmcp_v1_demo.secret", "tmcp_v1_demo. sec", "tmcp_v1_demo.\x16secret"):
             with self.subTest(value=value), self.assertRaises(ValueError):
                 configurer.validate_api_key(value)
 

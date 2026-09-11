@@ -25,7 +25,8 @@ class ConfigureResult:
 
 
 def validate_api_key(value: str) -> str:
-    if value != value.strip() or not API_KEY_PATTERN.fullmatch(value):
+    value = value.strip()
+    if not API_KEY_PATTERN.fullmatch(value):
         raise ValueError("TVCMALL_API_KEY must match tmcp_v1_{tokenId}.{secret} without Bearer")
     return value
 

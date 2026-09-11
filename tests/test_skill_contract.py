@@ -66,11 +66,12 @@ class SkillContractTests(unittest.TestCase):
         self.assertNotIn("\n      headers:", text)
         self.assertIn("$query-tvcmall-customer-data", text)
 
-    def test_skill_links_live_references_and_setup_script(self) -> None:
+    def test_skill_links_live_references_and_setup_scripts(self) -> None:
         text = (SKILL / "SKILL.md").read_text(encoding="utf-8")
         for relative in (
             "references/mcp-setup.md",
             "references/tool-routing.md",
+            "scripts/configure_tvcmall_mcp_windows.ps1",
             "scripts/configure_tvcmall_mcp.py",
         ):
             self.assertIn(relative, text)
@@ -168,24 +169,48 @@ class SkillContractTests(unittest.TestCase):
             readme,
         )
 
-    def test_personal_key_configuration_uses_visible_system_terminal(self) -> None:
+    def test_personal_key_configuration_uses_native_windows_dialog(self) -> None:
         setup = (SKILL / "references/mcp-setup.md").read_text(encoding="utf-8")
         readme = (ROOT / "README.md").read_text(encoding="utf-8")
 
         for value in (
-            "visible operating-system terminal",
+            "Windows PowerShell 5.1",
+            "Windows Forms",
+            "masked by default",
+            "does not require or invoke Python",
+            "configure_tvcmall_mcp_windows.ps1",
             "Do not use an Agent client's embedded PTY",
             "Start-Process",
-            "-WindowStyle Normal",
+            "-WindowStyle Hidden",
+            "-NoProfile",
+            "-STA",
+            "-File",
+            "resolved absolute",
             "Do not pass the Key as a command-line argument or environment variable",
-            "non-sensitive",
-            "open a system terminal manually",
+            "piped input",
+            "Python fallback",
+            "visible operating-system terminal",
         ):
             with self.subTest(value=value):
                 self.assertIn(value, setup)
 
-        self.assertIn("visible operating-system terminal", readme)
+        self.assertIn("local masked dialog", readme)
+        self.assertIn("Python is not required on Windows", readme)
         self.assertIn("embedded PTY", readme)
+        self.assertNotIn(
+            "opens a visible operating-system terminal and runs the local configuration script there",
+            readme,
+        )
+
+    def test_windows_setup_script_has_no_secret_input_channel(self) -> None:
+        script_path = SKILL / "scripts/configure_tvcmall_mcp_windows.ps1"
+        script = script_path.read_text(encoding="utf-8")
+
+        self.assertIn("System.Windows.Forms", script)
+        self.assertIn("UseSystemPasswordChar", script)
+        self.assertNotIn("$env:TVCMALL_API_KEY", script)
+        self.assertNotIn("Read-Host", script)
+        self.assertNotRegex(script, r"(?i)&?\s*(?:pythonw?|py)(?:\.exe)?\b")
 
     def test_current_balance_routes_to_account_stat(self) -> None:
         routing = (SKILL / "references/tool-routing.md").read_text(encoding="utf-8")

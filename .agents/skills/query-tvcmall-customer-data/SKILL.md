@@ -9,7 +9,7 @@ description: Use when Codex needs to install or repair the tvcmall MCP connectio
 
 1. Check whether the current session has an MCP dependency named `tvcmall` and the expected tools.
 2. If installation or repair is required, read [references/mcp-setup.md](references/mcp-setup.md) completely and follow it.
-3. Run [scripts/configure_tvcmall_mcp.py](scripts/configure_tvcmall_mcp.py) only after the user confirms plaintext storage.
+3. Only after the user confirms plaintext storage, follow the platform-specific launch and fallback rules in [references/mcp-setup.md](references/mcp-setup.md). On Windows, use [scripts/configure_tvcmall_mcp_windows.ps1](scripts/configure_tvcmall_mcp_windows.ps1) by default. Use [scripts/configure_tvcmall_mcp.py](scripts/configure_tvcmall_mcp.py) only on macOS/Linux or for the documented Python fallback.
 4. After configuration, ask the user to restart Codex or start a new session before calling business tools.
 
 ## Route Requests
@@ -19,6 +19,6 @@ Read [references/tool-routing.md](references/tool-routing.md) completely before 
 ## Protect Customer Data
 
 - Keep every operation read-only.
-- Do not ask the user to provide a Key in chat, and do not print a Key from configuration, logs, errors, or tool output.
+- Do not ask the user to provide a Key in chat or an Agent client's embedded PTY. The Key may be entered only in the native masked Windows dialog or at the hidden prompt of the Python fallback running in a visible operating-system terminal. Never pass it through command-line arguments, environment variables, or piped input, and never print it in configuration output, logs, errors, or tool output.
 - Do not call the TVCMall WebApi directly or bypass MCP authorization.
 - Give the direct answer first, followed by the minimum useful structured detail.

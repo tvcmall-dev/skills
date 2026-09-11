@@ -11,7 +11,8 @@ This repository contains reusable TVCMall Agent Skills. The current Skill is `qu
 ## Requirements
 
 - An agent tool that supports Agent Skills and MCP, such as the Codex app / CLI, Claude Code / Claude Code CLI, Gemini CLI, GitHub Copilot CLI, Cursor CLI, or Qwen Code CLI;
-- Python 3.11 or later;
+- Windows PowerShell 5.1 or later for the native Windows configuration dialog; Python is not required on Windows;
+- Python 3.11 or later for configuration on macOS/Linux, the optional cross-platform fallback on Windows, and repository validation;
 - A personal `TVCMALL_API_KEY`.
 
 ## Install This Skill In Agent Tools
@@ -59,7 +60,7 @@ The canonical TVCMall MCP endpoint is `https://openai.tvc-mall.com/mcp`. The `/m
 2. The Skill checks whether the current session provides the `tvcmall` MCP and expected tools.
 3. If the MCP is not installed, the Skill follows the connection method documented by [TVCMall MCP](https://github.com/tvcmall-dev/mcp) and registers the remote MCP without running a local server.
 4. If you do not have a personal `TVCMALL_API_KEY`, sign in and apply at https://www.tvcmall.com/user/agentkeys. Do not call any TVCMall business tool until the Key is configured.
-5. After you explicitly confirm plaintext storage, the Skill opens a visible operating-system terminal and runs the local configuration script there. Enter the complete personal Key only at the hidden prompt in that system terminal. Empty input is rejected. The Skill must not use an Agent client's embedded PTY or ask you to send the Key in chat.
+5. After you explicitly confirm plaintext storage, the Skill resolves the installed configuration script to an absolute path. On Windows, it launches `scripts/configure_tvcmall_mcp_windows.ps1` in Windows PowerShell and displays a local masked dialog; this path does not invoke Python. On macOS/Linux, or as an optional Windows fallback when Python 3.11 or later is already available, it runs `scripts/configure_tvcmall_mcp.py` in a visible operating-system terminal with input echo disabled. Enter the complete personal Key only in the masked dialog or at the fallback script's hidden prompt. The Skill must never ask for or receive the Key in chat or an Agent client's embedded PTY, and must not pass it through command-line arguments, environment variables, or piped input. If automatic launch fails, the Skill gives you the exact non-secret command with the resolved absolute script path to run manually in a system PowerShell or terminal.
 6. Restart Codex or start a new session, then check the `tvcmall` tools and call `tvcmall_auth_status`.
 
 The generated configuration looks like this. `<TVCMALL_PAT>` is a placeholder only:
@@ -70,7 +71,7 @@ url = "https://openai.tvc-mall.com/mcp"
 http_headers = { "TVCMALL_API_KEY" = "<TVCMALL_PAT>" }
 ```
 
-The Key is stored in plaintext in the user-level Codex configuration by the current design. The default path is `%USERPROFILE%\.codex\config.toml` on Windows and `~/.codex/config.toml` on macOS and Linux. If `CODEX_HOME` is set, the script uses `config.toml` under that directory.
+The Key is stored in plaintext in the user-level Codex configuration by the current design. The default path is `%USERPROFILE%\.codex\config.toml` on Windows and `~/.codex/config.toml` on macOS and Linux. Both configuration scripts use `config.toml` under `CODEX_HOME` when that environment variable is set.
 
 ## Complete Capability List
 
@@ -111,7 +112,8 @@ Show my recent balance expense records.
 
 ## Security
 
-- Never commit a real personal `TVCMALL_API_KEY` to Git, and never put it in chat, command arguments, logs, or screenshots.
+- Never commit a real personal `TVCMALL_API_KEY` to Git, and never put it in chat, command-line arguments, environment variables, piped input, an Agent client's embedded PTY, logs, errors, or screenshots. Enter it only in the native masked Windows dialog or at the hidden prompt of the Python fallback running in a visible system terminal.
+- Treat `config.toml.bak` as sensitive because it contains the immediately previous plaintext configuration; each changed setup replaces this fixed backup instead of accumulating credential copies.
 - Use the complete personal PAT as `TVCMALL_API_KEY`; do not add a `Bearer ` prefix.
 - Do not configure an `Authorization` header for the inbound MCP connection.
 - Each user must use their own Key. Do not use a website password, website login token, OAuth token, or shared credential.
