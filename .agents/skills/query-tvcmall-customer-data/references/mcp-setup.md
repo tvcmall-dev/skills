@@ -21,23 +21,26 @@ After receiving the user's explicit confirmation, resolve the selected script fr
 
 ### Windows: Native Dialog
 
-Use `scripts/configure_tvcmall_mcp_windows.ps1` by default. It runs in Windows PowerShell 5.1, displays a local Windows Forms dialog whose Key field is masked by default, and does not require or invoke Python. The dialog provides a dedicated Paste button, received-character feedback, an explicit Show/Hide control, inline validation with retry, and plaintext-storage confirmation. It uses the installed Codex command to validate and update a temporary copy before replacing the user configuration.
+Use `scripts/launch_tvcmall_mcp_windows.cmd` by default. The launcher checks PowerShell 7.0 or later candidates only in the standard installation directory and the current user's Codex bundled-runtime location; it does not search the current project or arbitrary `PATH` entries. These are fixed-location assumptions, not executable signature verification. It uses the built-in Windows PowerShell 5.1 fallback when no eligible PowerShell 7 candidate is found. Both paths display the same local Windows Forms dialog, whose Key field is masked by default. The Windows path does not require or invoke Python. The launcher invokes the installed `scripts/configure_tvcmall_mcp_windows.ps1` with `-NoProfile`, `-STA`, `-ExecutionPolicy Bypass`, and `-File`. The process-scoped execution-policy option cannot override an organization-enforced Group Policy.
 
-Resolve `<absolute-skill-directory>` before running this command; do not pass a relative script path. `-WindowStyle Hidden` hides only the child console, while the Windows Forms dialog remains visible:
+The dialog provides a dedicated Paste button, received-character feedback, an explicit Show/Hide control, inline validation with retry, and plaintext-storage confirmation. It uses the installed Codex command to validate and update a temporary copy before replacing the user configuration.
+
+Resolve `<absolute-skill-directory>` before running this command; do not pass a relative launcher path. Execute the launcher directly and wait for its exit code:
 
 ```powershell
-$windowsPowerShell = Join-Path $env:SystemRoot 'System32\WindowsPowerShell\v1.0\powershell.exe'
-$skillScript = (Resolve-Path -LiteralPath '<absolute-skill-directory>\scripts\configure_tvcmall_mcp_windows.ps1').Path
-$arguments = '-NoProfile -STA -File "{0}"' -f $skillScript
-$process = Start-Process -FilePath $windowsPowerShell -ArgumentList $arguments -WindowStyle Hidden -Wait -PassThru
+$skillLauncher = (Resolve-Path -LiteralPath '<absolute-skill-directory>\scripts\launch_tvcmall_mcp_windows.cmd').Path
+& $skillLauncher
+$setupExitCode = $LASTEXITCODE
 ```
 
-The script explicitly shows its form while keeping the child console hidden. Windows can still deny automatic keyboard focus; if the visible dialog is not focused, ask the user to click it. The launcher must use the resolved absolute `.ps1` path. Do not pass the Key as a command-line argument or environment variable, and do not send it as piped input. The dialog trims surrounding copied whitespace, rejects empty or malformed values without changing the configuration, and keeps the dialog open for another attempt.
+Exit code `0` means configuration completed, `1223` means the user cancelled or closed the dialog, and `2` means a handled dialog startup failure. Any other nonzero result is also a launch or host failure; only `1223` may be classified as cancellation. Do not report success for a nonzero result.
 
-If automatic launch fails, do not ask for the Key in chat or fall back to an Agent client's embedded PTY. Give the user this non-secret command after replacing `<resolved-absolute-script-path>` with the actual path, and ask them to run it in a system PowerShell:
+Do not use `-WindowStyle Hidden` around this launcher or its PowerShell child. Windows PowerShell 5.1 can apply that startup state to the first GUI window, and a hidden console also conceals execution-policy or startup errors. Running the non-secret launcher command in an Agent shell is allowed. Do not use an Agent client's embedded PTY for Key entry; all Key entry must remain in the native dialog. Windows can still deny automatic keyboard focus; if the visible dialog is not focused, ask the user to click it. Do not pass the Key as a command-line argument or environment variable, and do not send it as piped input. The dialog trims surrounding copied whitespace, rejects empty or malformed values without changing the configuration, and keeps the dialog open for another attempt.
+
+If automatic launch fails, do not ask for the Key in chat or fall back to Key entry in an Agent client's embedded PTY. Give the user the resolved absolute launcher path and ask them to run this non-secret command in a visible system PowerShell:
 
 ```powershell
-& "$env:SystemRoot\System32\WindowsPowerShell\v1.0\powershell.exe" -NoProfile -STA -File '<resolved-absolute-script-path>'
+& '<resolved-absolute-launcher-path>'
 ```
 
 ### Python Fallback
@@ -69,7 +72,7 @@ Ask the user to restart Codex or start a new session. After confirming that the 
 ## Configuration Errors
 
 - Invalid TOML or a write failure: preserve the original configuration and report only the non-sensitive error and backup path.
-- If automatic Windows launch fails, provide the exact non-secret Windows PowerShell command with the resolved absolute `.ps1` path. Do not use an Agent client's embedded PTY.
+- If automatic Windows launch fails, provide the exact non-secret command with the resolved absolute `.cmd` launcher path. The user may run it in a visible system PowerShell; never ask them to enter the Key in an Agent client's embedded PTY.
 - If the native Windows script itself cannot run, use the Python fallback only when Python 3.11 or later is already available. Do not require Python for the normal Windows path.
 - If the user cancels or closes the dialog or fallback terminal before configuration completes, report that completion was not verified and offer to launch it again.
 - Network errors or `5xx`: keep the canonical HTTPS configuration, explain that the service may be temporarily unavailable, and suggest trying again later.

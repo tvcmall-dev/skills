@@ -4,7 +4,14 @@ $ErrorActionPreference = 'Stop'
 $script:TvcmallMcpUrl = 'https://openai.tvc-mall.com/mcp'
 $script:TvcmallApiKeyPattern = '\Atmcp_v1_[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\z'
 
-if ($null -eq ('TvcmallSetup.NativeMethods' -as [type])) {
+function Initialize-TvcmallNativeMethods {
+    [CmdletBinding()]
+    param()
+
+    if ($null -ne ('TvcmallSetup.NativeMethods' -as [type])) {
+        return
+    }
+
     Add-Type -TypeDefinition @'
 using System;
 using System.Runtime.InteropServices;
@@ -408,6 +415,7 @@ function New-TvcmallSetupForm {
 
     Add-Type -AssemblyName System.Windows.Forms
     Add-Type -AssemblyName System.Drawing
+    Initialize-TvcmallNativeMethods
     [System.Windows.Forms.Application]::EnableVisualStyles()
 
     if ($null -eq $ConfigureAction) {
@@ -666,7 +674,9 @@ function Show-TvcmallSetupDialog {
         if ($dialogResult -eq [System.Windows.Forms.DialogResult]::OK) {
             return 0
         }
-        return 1
+        # Use the Windows ERROR_CANCELLED value so host startup failures cannot
+        # be mistaken for an intentional close or Cancel action.
+        return 1223
     }
     finally {
         $form.Dispose()

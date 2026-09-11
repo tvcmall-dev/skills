@@ -9,7 +9,7 @@ description: Use when Codex needs to install or repair the tvcmall MCP connectio
 
 1. Check whether the current session has an MCP dependency named `tvcmall` and the expected tools.
 2. If installation or repair is required, read [references/mcp-setup.md](references/mcp-setup.md) completely and follow it.
-3. Only after the user confirms plaintext storage, follow the platform-specific launch and fallback rules in [references/mcp-setup.md](references/mcp-setup.md). On Windows, use [scripts/configure_tvcmall_mcp_windows.ps1](scripts/configure_tvcmall_mcp_windows.ps1) by default. Use [scripts/configure_tvcmall_mcp.py](scripts/configure_tvcmall_mcp.py) only on macOS/Linux or for the documented Python fallback.
+3. Only after the user confirms plaintext storage, follow the platform-specific launch and fallback rules in [references/mcp-setup.md](references/mcp-setup.md). On Windows, run [scripts/launch_tvcmall_mcp_windows.cmd](scripts/launch_tvcmall_mcp_windows.cmd) by default; it launches [scripts/configure_tvcmall_mcp_windows.ps1](scripts/configure_tvcmall_mcp_windows.ps1) with an eligible PowerShell 7 candidate from the documented fixed locations when found and a Windows PowerShell fallback otherwise. Use [scripts/configure_tvcmall_mcp.py](scripts/configure_tvcmall_mcp.py) only on macOS/Linux or for the documented Python fallback.
 4. After configuration, ask the user to restart Codex or start a new session before calling business tools.
 
 ## Route Requests

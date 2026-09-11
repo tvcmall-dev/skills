@@ -71,6 +71,7 @@ class SkillContractTests(unittest.TestCase):
         for relative in (
             "references/mcp-setup.md",
             "references/tool-routing.md",
+            "scripts/launch_tvcmall_mcp_windows.cmd",
             "scripts/configure_tvcmall_mcp_windows.ps1",
             "scripts/configure_tvcmall_mcp.py",
         ):
@@ -174,17 +175,20 @@ class SkillContractTests(unittest.TestCase):
         readme = (ROOT / "README.md").read_text(encoding="utf-8")
 
         for value in (
-            "Windows PowerShell 5.1",
+            "PowerShell 7.0 or later",
+            "Windows PowerShell 5.1 fallback",
             "Windows Forms",
             "masked by default",
             "does not require or invoke Python",
+            "launch_tvcmall_mcp_windows.cmd",
             "configure_tvcmall_mcp_windows.ps1",
             "Do not use an Agent client's embedded PTY",
-            "Start-Process",
-            "-WindowStyle Hidden",
             "-NoProfile",
             "-STA",
+            "-ExecutionPolicy Bypass",
             "-File",
+            "Do not use `-WindowStyle Hidden`",
+            "1223",
             "resolved absolute",
             "Do not pass the Key as a command-line argument or environment variable",
             "piped input",
@@ -195,7 +199,9 @@ class SkillContractTests(unittest.TestCase):
                 self.assertIn(value, setup)
 
         self.assertIn("local masked dialog", readme)
-        self.assertIn("Python is not required on Windows", readme)
+        self.assertIn("does not require Python on Windows", readme)
+        self.assertIn("PowerShell 7.0 or later", readme)
+        self.assertIn("Windows PowerShell 5.1 fallback", readme)
         self.assertIn("embedded PTY", readme)
         self.assertNotIn(
             "opens a visible operating-system terminal and runs the local configuration script there",
@@ -205,12 +211,22 @@ class SkillContractTests(unittest.TestCase):
     def test_windows_setup_script_has_no_secret_input_channel(self) -> None:
         script_path = SKILL / "scripts/configure_tvcmall_mcp_windows.ps1"
         script = script_path.read_text(encoding="utf-8")
+        launcher_path = SKILL / "scripts/launch_tvcmall_mcp_windows.cmd"
+        launcher = launcher_path.read_text(encoding="ascii")
 
         self.assertIn("System.Windows.Forms", script)
         self.assertIn("UseSystemPasswordChar", script)
         self.assertNotIn("$env:TVCMALL_API_KEY", script)
         self.assertNotIn("Read-Host", script)
         self.assertNotRegex(script, r"(?i)&?\s*(?:pythonw?|py)(?:\.exe)?\b")
+        self.assertIn("pwsh.exe", launcher)
+        self.assertIn("powershell.exe", launcher)
+        self.assertIn("-ExecutionPolicy Bypass", launcher)
+        preferred_path, _fallback = launcher.split(":windows_powershell", 1)
+        self.assertNotIn("WindowsPowerShell", preferred_path)
+        self.assertNotIn("%PATH%", launcher)
+        self.assertNotIn("TVCMALL_API_KEY", launcher)
+        self.assertNotRegex(launcher, r"(?i)\b(?:pythonw?|py)(?:\.exe)?\b")
 
     def test_current_balance_routes_to_account_stat(self) -> None:
         routing = (SKILL / "references/tool-routing.md").read_text(encoding="utf-8")
