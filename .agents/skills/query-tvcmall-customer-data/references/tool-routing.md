@@ -39,8 +39,8 @@
 
 - Treat each `price` as the value returned by the current MCP result. Do not recalculate it from a title, a formatted currency string, an image, or an upstream field that the tool did not expose.
 - For a request for cheap or cheapest products, inspect the live `tvcmall_search_products` schema. If it exposes a price-ascending sort, use it and compare prices from the same search response. If it does not, explain that the current result cannot establish the lowest price. Do not claim an absolute lowest price or strict price ordering.
-- Keep a search-result price and a detail price labeled by their source. Search and detail use separate upstream responses and may return different values. Do not substitute a detail price into a search ranking. Do not describe a detail price as more current or more accurate without explicit API evidence.
-- If the two values differ, report both values and say that the API returned different source values. When the cause is not exposed, say it may reflect a different price tier or MOQ; do not invent the cause.
+- Keep a search-result price and a detail price labeled by their source. Search and detail use separate upstream responses and may return different values. For a confirmed product, use the detail response's `price` as authoritative for that product's detail. Do not replace it with the search-result price.
+- If the two values differ, report the detail price as the confirmed product price and label the search value as a listing reference. Say that the API returned different source values; when the cause is not exposed, do not invent whether it was a different price tier or MOQ.
 
 ## MCP Images
 

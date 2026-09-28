@@ -92,7 +92,7 @@ All business capabilities are read-only. Tool parameters, defaults, allowed valu
 | Balance | `tvcmall_get_balance` | Retrieves the backend-formatted current balance; requires a personal Key |
 | Balance | `tvcmall_list_balance_records` | Lists balance ledger records; requires a personal Key |
 
-When any TVCMall MCP tool returns a relative image path, the Skill displays it from `https://img.tvc-mall.com/`. Absolute HTTP and HTTPS image URLs remain unchanged. When presenting such images, use Markdown image syntax with the complete normalized URL (`![Product image](https://img.tvc-mall.com/...)`) and also provide a clickable URL fallback when the client does not render remote images.
+When any TVCMall MCP tool returns a relative image path, the Skill displays it from `https://img.tvc-mall.com/`. Absolute HTTP and HTTPS image URLs remain unchanged. When presenting such images, use Markdown image syntax with the complete normalized URL (`![Product image](https://img.tvc-mall.com/...)`) and also provide a clickable URL fallback when the client does not render remote images. For a confirmed product, use the `price` returned by `tvcmall_get_product_detail` as the authoritative detail price; a search price is only a listing reference.
 
 The Skill does not support placing orders, making payments, cancelling orders, changing addresses, redeeming points, or exporting files.
 

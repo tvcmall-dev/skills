@@ -183,7 +183,8 @@ class SkillContractTests(unittest.TestCase):
             "same search response",
             "search-result price",
             "detail price",
-            "Do not describe a detail price as more current or more accurate",
+            "detail response's `price` as authoritative",
+            "Do not replace it with the search-result price",
             "Do not claim an absolute lowest price",
             "price tier or MOQ",
         ):
