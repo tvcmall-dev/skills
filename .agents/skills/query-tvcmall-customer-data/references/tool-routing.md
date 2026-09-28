@@ -35,11 +35,19 @@
 - Do not guess a filter Code or pass an attribute name or value where the current schema requires a Code.
 - If the search result has no filter-cache token or the filter tool does not return the requested value, explain that the attribute Code could not be resolved. Do not claim that the initial unfiltered results satisfy the requested attribute.
 
+## Product Prices
+
+- Treat each `price` as the value returned by the current MCP result. Do not recalculate it from a title, a formatted currency string, an image, or an upstream field that the tool did not expose.
+- For a request for cheap or cheapest products, inspect the live `tvcmall_search_products` schema. If it exposes a price-ascending sort, use it and compare prices from the same search response. If it does not, explain that the current result cannot establish the lowest price. Do not claim an absolute lowest price or strict price ordering.
+- Keep a search-result price and a detail price labeled by their source. Search and detail use separate upstream responses and may return different values. Do not substitute a detail price into a search ranking. Do not describe a detail price as more current or more accurate without explicit API evidence.
+- If the two values differ, report both values and say that the API returned different source values. When the cause is not exposed, say it may reflect a different price tier or MOQ; do not invent the cause.
+
 ## MCP Images
 
 - When displaying an image returned by any TVCMall MCP tool, preserve an absolute HTTP or HTTPS URL unchanged.
 - Treat any other non-empty image value as a relative image path. Remove its leading slash, if present, and append it to `https://img.tvc-mall.com/` with exactly one slash.
 - Examples: `/uploads/details/6622000996A-5.jpg` and `uploads/details/6622000996A-5.jpg` both become `https://img.tvc-mall.com/uploads/details/6622000996A-5.jpg`.
+- Render each displayed image with Markdown image syntax such as `![Product image](https://img.tvc-mall.com/uploads/details/6622000996A-5.jpg)`; do not emit only the raw relative path or an empty image placeholder. Also include the complete image URL as a clickable link when the client may not render remote Markdown images.
 - Normalize only the displayed URL. Do not modify the raw MCP response or treat the image origin as part of an MCP tool schema.
 
 ## Orders and Tracking

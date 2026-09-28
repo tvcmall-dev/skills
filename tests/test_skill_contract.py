@@ -161,6 +161,8 @@ class SkillContractTests(unittest.TestCase):
             "or treat the image origin as part of an MCP tool schema.",
             routing,
         )
+        self.assertIn("![Product image]", routing)
+        self.assertIn("complete image URL", routing)
         self.assertIn(
             "When any TVCMall MCP tool returns a relative image path",
             readme,
@@ -169,6 +171,24 @@ class SkillContractTests(unittest.TestCase):
             "Absolute HTTP and HTTPS image URLs remain unchanged.",
             readme,
         )
+        self.assertIn("Markdown image syntax", readme)
+        self.assertIn("clickable URL fallback", readme)
+
+    def test_product_prices_are_presented_with_source_and_sorting_limits(self) -> None:
+        routing = (SKILL / "references/tool-routing.md").read_text(encoding="utf-8")
+
+        for value in (
+            "price-ascending sort",
+            "cheapest",
+            "same search response",
+            "search-result price",
+            "detail price",
+            "Do not describe a detail price as more current or more accurate",
+            "Do not claim an absolute lowest price",
+            "price tier or MOQ",
+        ):
+            with self.subTest(value=value):
+                self.assertIn(value, routing)
 
     def test_personal_key_configuration_uses_native_windows_dialog(self) -> None:
         setup = (SKILL / "references/mcp-setup.md").read_text(encoding="utf-8")
